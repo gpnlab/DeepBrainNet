@@ -1,24 +1,20 @@
+name: DeepBrainNet
+
 channels:
-- pytorch
+    - simpleitk
+
 dependencies:
-    - python>=3.6.0
-    - pytorch=1.4.0
+    - tensorflow-gpu
     - numpy
     - matplotlib
     - scipy
     - scikit-learn
     - jupyterlab
-    - requests
-    - click
-    - openpyxl
     - ipykernel
     - pandas
     - seaborn
+    - simpleITK
     - pip
     - pip:
-        - torchvision
         - watermark
         - pytest
-        - pre-commit
-        - black
-        - flake8
