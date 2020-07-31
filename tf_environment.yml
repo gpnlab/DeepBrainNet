@@ -1,0 +1,17 @@
+dependencies:
+    - tensorflow-gpu
+    - numpy
+    - matplotlib
+    - scipy
+    - scikit-learn
+    - jupyterlab
+    - requests
+    - click
+    - openpyxl
+    - ipykernel
+    - pandas
+    - seaborn
+    - pip
+    - pip:
+        - watermark
+        - pytest

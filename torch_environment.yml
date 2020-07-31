@@ -1,0 +1,24 @@
+channels:
+- pytorch
+dependencies:
+    - python>=3.6.0
+    - pytorch=1.4.0
+    - numpy
+    - matplotlib
+    - scipy
+    - scikit-learn
+    - jupyterlab
+    - requests
+    - click
+    - openpyxl
+    - ipykernel
+    - pandas
+    - seaborn
+    - pip
+    - pip:
+        - torchvision
+        - watermark
+        - pytest
+        - pre-commit
+        - black
+        - flake8
