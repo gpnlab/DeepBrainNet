@@ -1,9 +1,16 @@
 # exclude data from source control by default
 /data/
+example/data/
 # exclude report from source control by default
-/reports/
-# exclude models from source control by default
 /models/
+example/models/
+# exclude results from source control by default
+/results/
+example/results/
+# exclude results from source control by default
+/docs/
+# exclude models from source control by default
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
