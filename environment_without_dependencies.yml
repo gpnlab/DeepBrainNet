@@ -1,0 +1,11 @@
+name: DBN
+
+dependencies:
+    - keras
+    - numpy
+    - scikit-learn
+    - pandas
+    - pillow
+    - pip
+    - pip:
+        - nibabel
