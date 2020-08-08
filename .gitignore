@@ -5,8 +5,8 @@ example/data/
 /models/
 example/models/
 # exclude results from source control by default
-/results/
-example/results/
+/results/*
+example/results/*
 # exclude results from source control by default
 /docs/
 # exclude models from source control by default
