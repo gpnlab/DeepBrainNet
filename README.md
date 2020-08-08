@@ -1,5 +1,7 @@
 # DeepBrainNet
+As seen in [here](https://academic.oup.com/brain/article-abstract/143/7/2312/5863667?redirectedFrom=fulltext)
 
+Support data available in [here](https://github.com/vishnubashyam/DeepBrainNet)
 ## Dependency List
 
 All dependencies are in the `environment.yml` file. You can create a `conda` environment named `DBN` and activate it with:
