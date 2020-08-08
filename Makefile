@@ -28,33 +28,33 @@ clean_example:
 	rm -f example/data/raw/*.nii.gz
 	rm -f example/data/interim/Test/*
 	rm -f example/results/*.csv
-	rm -rf example/model/*
+	rm -rf example/models/*
 
 ### GENERAL PIPELINE ###
 # Rules for dowloading raw T1 data
 data/raw/T1_3.nii.gz:
 	sh src/data/download.sh $(URL_DATA) data/raw/
 example/data/raw/T1_3.nii.gz:
-	sh src/data/download.sh  $(URL_DATA) example/data/raw/
+	sh example/scripts/download_data.sh  $(URL_DATA) example/data/raw/
 
 # Rules for preprocessing data
 data/interim/Test/T1_3-0.jpg: data/raw/T1_3.nii.gz
 	python src/data/slicer.py data/raw/ data/interim/Test/
 # Rule for preprocessing example data
 example/data/interim/Test/T1_3-0.jpg: example/data/raw/T1_3.nii.gz
-	python src/data/slicer.py example/data/raw/ example/data/interim/Test/
+	python example/scripts/slicer.py example/data/raw/ example/data/interim/Test/
 
 # Rule for dowloading models
 $(MODEL_PATH):
 	sh src/models/download_models.sh  $(URL_MODELS) $(MODELS_FOLDER)
 # Rule for dowloading example DBN model
 $(EXAMPLE_MODELS_PATH):
-	sh src/models/download_example_model.sh $(URL_EXAMPLE_MODELS) $(EXAMPLE_MODELS_FOLDER)
+	sh example/scripts/download_model.sh $(URL_EXAMPLE_MODELS) $(EXAMPLE_MODELS_FOLDER)
 
 # Rules for age prediction for models
 $(OUT_FILE): data/interim/Test/T1_3-0.jpg $(MODEL_PATH)
 	python src/app/pred.py data/interim/ $(MODEL_PATH) $@
 # Rule for age prediction for example DBN models
 $(EXAMPLE_OUT_FILE): example/data/interim/Test/T1_3-0.jpg $(EXAMPLE_MODELS_PATH)
-	python src/app/pred.py example/data/interim/ $(EXAMPLE_MODELS_PATH) $@
+	python example/scripts/pred.py example/data/interim/ $(EXAMPLE_MODELS_PATH) $@
 	cp $(EXAMPLE_OUT_FILE) results/$(EXAMPLE_MODELS)_pred.csv
