@@ -50,8 +50,8 @@ deplist = []
 test_generator.reset()
 
 for filename in test_generator.filenames:
-    IDlist.append(filename.split('_')[1][0])
-
+    IDlist.append(filename.split('-')[0])
+    #IDlist.append(filename.split('_')[1][0])
 
 test_generator.reset()
 predicty = model.predict(

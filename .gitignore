@@ -9,6 +9,8 @@ example/models/
 example/results/*
 # exclude results from source control by default
 /docs/
+# exclude logs from source control by default
+/logs/
 # exclude models from source control by default
 
 
