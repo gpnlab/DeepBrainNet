@@ -1,29 +1,18 @@
-import keras
-from keras.applications.resnet50 import ResNet50
-from keras.preprocessing import image
-from keras import models, optimizers
 from keras.preprocessing.image import ImageDataGenerator
-from keras import regularizers
-from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
-from keras import models
-from keras import layers
-from keras import optimizers
+from keras.models import load_model
 
 import numpy as np
 import pandas as pd
-import math
+import itertools
 
-#import h5py
-from keras.models import load_model
 import sys
-import os
-from os import listdir
 
 test_dir = str(sys.argv[1])
-model = load_model(sys.argv[2])
-out_file = str(sys.argv[3])
+subjects_file = str(sys.argv[2])
+model = load_model(sys.argv[3])
+out_file = str(sys.argv[4])
 
-#print(model.summary())
+# print(model.summary())
 
 batch_size = 80
 
@@ -43,15 +32,23 @@ test_generator = datagen_test.flow_from_directory(
 
 labels_test = []
 sitelist = []
-IDlist = []
 sex_test = []
 slice_test = []
 deplist = []
 test_generator.reset()
 
-for filename in test_generator.filenames:
-    IDlist.append(filename.split('-')[0])
-    #IDlist.append(filename.split('_')[1][0])
+IDSet = [line.rstrip('\n') for line in open(subjects_file)]
+# IDset = set(prediction_data['ID'].values)
+# IDset = list(IDset)
+
+# IDlist = []
+IDlist = list(
+            itertools.chain.from_iterable(
+                itertools.repeat(x, batch_size)
+                for x in IDSet))
+# for filename in test_generator.filenames:
+#    IDlist.append(filename.split('-')[0])
+#    IDlist.append(filename.split('_')[1][0])
 
 test_generator.reset()
 predicty = model.predict(
@@ -63,14 +60,12 @@ prediction_data = pd.DataFrame()
 prediction_data['ID'] = IDlist
 prediction_data['Prediction'] = predicty
 
-IDset = set(prediction_data['ID'].values)
-IDset = list(IDset)
 
 final_prediction = []
 final_labels = []
 final_site = []
 
-for x in IDset:
+for x in IDSet:
     check_predictions = prediction_data[prediction_data['ID'] == x][
         'Prediction']
     predicty = check_predictions.reset_index(drop=True)
@@ -79,6 +74,6 @@ for x in IDset:
 predicty1 = final_prediction
 
 out_data = pd.DataFrame()
-out_data['ID'] = IDset
+out_data['ID'] = IDSet
 out_data['Pred_Age'] = predicty1
 out_data.to_csv(out_file, index=False)
