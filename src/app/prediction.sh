@@ -35,10 +35,10 @@ function main()
     opts_AddMandatory '--data' 'DATA_FOLDER' 'data folder Path' "a required value; is the path to the study folder holding the preprocessed data" "--dataFolder"
     opts_AddMandatory '--study' 'STUDY_NAME' 'study folder Name' "a required value; is the path to the study folder holding the preprocessed data" "--studyName"
     opts_AddMandatory '--pipeline' 'PIPELINE' 'preprocessing pipeline' "a required value; the preprocessing pipeline used, e.g., RPP, raw"
-    opts_AddMandatory '--subjects' 'SUBJECTS' 'path to file with subject IDs' "a required value; path to a file with the IDs of the subject to be processed" "--subject" "--subjectList" "--subjList"
-    opts_AddMandatory '--output' 'OUT_FILE' 'path to output file' "an optional value; the output csv file that will hold the brain age predictions" "--out"
-    opts_AddOptional '--b0' 'B0' 'magnetic field intensity' "an optional value; the scanner magnetic field intensity, e.g., 1.5T, 3T, 7T" "3T"
-    opts_AddOptional '--model' 'MODEL' 'path to .h5 model' "an optional value; path to the model.h5 file" "${DBNDIR}/models/DBN_model.h5"
+    opts_AddOptional  '--subjects' 'SUBJECTS' 'path to file with subject IDs' "an optional value; path to a file with the IDs of the subject to be processed" "default"  "--subject" "--subjectList" "--subjList"
+    opts_AddOptional  '--output' 'OUT_FILE' 'path to output file' "an optional value; the output txt file that will hold the brain age predictions" "default"  "--out"
+    opts_AddOptional  '--b0' 'B0' 'magnetic field intensity' "an optional value; the scanner magnetic field intensity, e.g., 1.5T, 3T, 7T" "3T"
+    opts_AddOptional  '--model' 'MODEL' 'path to .h5 model' "an optional value; path to the model.h5 file" "${DBNDIR}/models/DBN_model.h5"
     opts_ParseArguments "$@"
 
     #display the parsed/default values
@@ -54,6 +54,11 @@ function main()
     ###
 
     ### Extract T1w from subject directories and add to a single directory
+    # Predict brain age and save in output .txt file
+    if [ "$SUBJECTS" = "default" ] ; then
+        SUBJECTS="${DATA_FOLDER}/${STUDY_NAME}/${PIPELINE}/subjects.txt"
+    fi
+
     # Read SUBJECTS file
     subjList=""
     if [ -f "${SUBJECTS}" ] ; then
@@ -82,11 +87,17 @@ function main()
     # Slice T1w and save slices as .jpg in a Test folder
     IMAGES_DIR="${SUBJECTS_DIR}/Test"
     mkdir -p $IMAGES_DIR
+    rsync $SUBJECTS $SUBJECTS_DIR/$subjListFilename
     python $DBNDIR/src/data/slicer.py ${SUBJECTS_DIR}/ ${IMAGES_DIR}/
 
-    # Predict brain age and save in output .csv file
+    # Predict brain age and save in output .txt file
+    if [ "$OUT_FILE" = "default" ] ; then
+        OUT_FILE="$SUBJECTS_DIR/brain_ages.txt"
+    fi
+
     mkdir -p "${OUT_FILE%/*}"
     python $DBNDIR/src/app/pred.py $SUBJECTS_DIR $SUBJECTS $MODEL $OUT_FILE
+    rsync $OUT_FILE $SUBJECTS_DIR/brain_ages.txt
 }
 
 if (($# == 0)) || [[ "$1" == --* ]]
