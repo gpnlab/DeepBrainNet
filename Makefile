@@ -9,7 +9,9 @@ STUDY?=ADNI
 DATA_RAW?=data/raw/$(STUDY)
 PIPELINE?=RPP
 DATA_PREPROCESSED?=data/preprocessed/$(STUDY)/$(PIPELINE)
-SUBJECTS?=$(DATA_PREPROCESSED)/subjects.txt
+SUBJECTS?=$(DATA_RAW)/subjects.txt
+SUBJECTS_PREPROCESSED?=$(DATA_PREPROCESSED)/subjects.txt
+# Get filename without extension
 SUBJECTS_BASENAME=$(basename $(SUBJECTS))
 SUBJECTS_BASENAME:=$(notdir $(SUBJECTS_BASENAME))
 B0?=3T
@@ -27,7 +29,7 @@ else
 endif
 
 ifeq ($(PIPELINE), RPP)
-	PREPROCESSING_SCRIPT=src/data/RPPBatch.sh
+	PREPROCESSING_SCRIPT=src/data/RPP/RPPBatch.sh
 else
 	# change to add other pipelines in the future
 	PREPROCESSING_SCRIPT=src/data/RPPBatch.sh
@@ -37,25 +39,29 @@ all: $(OUTPUT_FILE)
 
 clean:
 	rm -rf $(OUTPUT_DIR)
+	rm -f $(SUBJECTS_PREPROCESSED)
 
 ### GENERAL PIPELINE ###
 # Rule for dowloading raw data
 $(DATA_RAW):
 	bash src/data/download.sh $(URL_DATA) $(DATA_RAW)
 
+$(SUBJECTS): $(DATA_RAW)
+	python src/data/create_subjects_list.py $(DATA_RAW) $@
+
 # Rule for preprocessing raw data
 $(DATA_PREPROCESSED): $(DATA_RAW)
 	bash $(PREPROCESSING_SCRIPT) --studyFolder=$(DATA_RAW) --subjects=$(SUBJECTS) --b0=$(B0) --runLocal
 
-$(SUBJECTS): $(DATA_PREPROCESSED)
-	python src/data/create_subjects_list.py $(DATA_RAW) $(SUBJECTS)
+$(SUBJECTS_PREPROCESSED): $(DATA_PREPROCESSED)
+	python src/data/create_subjects_list.py $(DATA_RAW) $@
 
 # Rule for dowloading models
 # Change to add specific links to specific models online
 $(MODEL):
-	bash src/models/download_models.sh  $(URL_MODEL) /models
+	bash src/models/download_models.sh  $(URL_MODEL) models
 
 # Rule for predicting brain ages
-$(OUTPUT_FILE): $(DATA_PREPROCESSED) $(SUBJECTS) $(MODEL)
-	bash src/app/prediction.sh --data=$(DATA_PREPROCESSED) --subjects=$(SUBJECTS) --model=$(MODEL) --b0=$(B0) --output=$@
+$(OUTPUT_FILE): $(DATA_PREPROCESSED) $(SUBJECTS_PREPROCESSED) $(MODEL)
+	bash src/app/prediction.sh --data=$(DATA_PREPROCESSED) --subjects=$(SUBJECTS_PREPROCESSED) --model=$(MODEL) --b0=$(B0) --output=$@
 
