@@ -15,8 +15,6 @@ function usage()
 $log_ToolName: Predict brain age given a brain extracted, MNI registered T1w Image
 
 Usage: $log_ToolName --data=<path to the data folder>
-                     --study=<name of the study>
-                     --pipeline=<name of the preprocessing pipeline used>
                      --subjects=<path to file with subject IDs>
                      --output=<path to outuput txt file>
                      [--b0=<scanner magnetic field intensity] default=3T
@@ -32,12 +30,7 @@ Values default to running the example with sample data
 
 function main()
 {
-    #arguments to opts_Add*: switch, variable to set, name for inside of <> in help text, description, [default value if AddOptional], [compatibility flag], ...
-    #opts_AddOptional '--foo' 'myfoo' 'my foo' "give me a value, and i'll store it in myfoo" 'defaultfoo' '--oldoptionname' '--evenoldername'
-    #opts_AddMandatory '--bar' 'mybar' 'your bar' "a required value, and this description is really long, but the opts_ShowArguments function automatically splits at spaces, or hyphenates if there aren't enough spaces"
     opts_AddMandatory '--data' 'DATA_FOLDER' 'data folder Path' "a required value; is the path to the study folder holding the preprocessed data" "--dataFolder"
-    opts_AddMandatory '--study' 'STUDY_NAME' 'study folder Name' "a required value; is the path to the study folder holding the preprocessed data" "--studyName"
-    opts_AddMandatory '--pipeline' 'PIPELINE' 'preprocessing pipeline' "a required value; the preprocessing pipeline used, e.g., RPP, raw"
     opts_AddOptional  '--subjects' 'SUBJECTS' 'path to file with subject IDs' "an optional value; path to a file with the IDs of the subject to be processed" "default"  "--subject" "--subjectList" "--subjList"
     opts_AddOptional  '--output' 'OUT_FILE' 'path to output file' "an optional value; the output txt file that will hold the brain age predictions" "default"  "--out"
     opts_AddOptional  '--b0' 'B0' 'magnetic field intensity' "an optional value; the scanner magnetic field intensity, e.g., 1.5T, 3T, 7T" "3T"
@@ -59,7 +52,8 @@ function main()
     ### Extract T1w from subject directories and add to a single directory
     # Predict brain age and save in output .txt file
     if [ "$SUBJECTS" = "default" ] ; then
-        SUBJECTS="${DATA_FOLDER}/${STUDY_NAME}/${PIPELINE}/subjects.txt"
+        #SUBJECTS="${DATA_FOLDER}/${STUDY_NAME}/${PIPELINE}/subjects.txt"
+        SUBJECTS="${DATA_FOLDER}/subjects.txt"
     fi
 
     # Read SUBJECTS file
@@ -78,12 +72,14 @@ function main()
     subjListFilename=$(basename -- "${SUBJECTS}")
     subjListFilename="${subjListFilename%.*}"
     #subjListFilename="${SUBJECTS##*/}"
-    SUBJECTS_DIR="${DATA_FOLDER}/${STUDY_NAME}/${PIPELINE}/${subjListFilename}"
+    #SUBJECTS_DIR="${DATA_FOLDER}/${STUDY_NAME}/${PIPELINE}/${subjListFilename}"
+    SUBJECTS_DIR="${DATA_FOLDER}/${subjListFilename}"
     mkdir -p $SUBJECTS_DIR
     echo -e "\nCycling through list of subjects\n"
     for subject in $subjList ; do
         echo -e "Subject $subject"
-        subjectImage="${DATA_FOLDER}/${STUDY_NAME}/${PIPELINE}/${subject}/${B0}/MNINonLinear/T1w_brain.nii.gz"
+        #subjectImage="${DATA_FOLDER}/${STUDY_NAME}/${PIPELINE}/${subject}/${B0}/MNINonLinear/T1w_brain.nii.gz"
+        subjectImage="${DATA_FOLDER}/${subject}/${B0}/MNINonLinear/T1w_brain.nii.gz"
         cp $subjectImage "${SUBJECTS_DIR}/${subject}_${B0}_T1w_brain.nii.gz"
     done
 
