@@ -230,8 +230,8 @@ t1wFolder="T1w" #Location of T1w images
 atlasSpaceFolder="MNINonLinear"
 
 # Build Paths
-t1wFolder=${DBNDIR}/data/interim/${studyFolder}/RPP/${subject}/${b0}/${t1wFolder}
-atlasSpaceFolder=${DBNDIR}/data/interim/RPP/${studyFolder}/${subject}/${b0}/${atlasSpaceFolder}
+t1wFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${t1wFolder}
+atlasSpaceFolder=${DBNDIR}/data/preprocessed/RPP/${studyFolder}/${subject}/${b0}/${atlasSpaceFolder}
 
 log_Msg "t1wFolder: $t1wFolder"
 log_Msg "atlasSpaceFolder: $atlasSpaceFolder"
