@@ -5,8 +5,8 @@ export FSL_FIXDIR=/usr/local/fix
 
 # Set up FSL (if not already done so in the running environment)
 # Uncomment the following 2 lines (remove the leading #) and correct the FSLDIR setting for your setup
-#export FSLDIR=/usr/local/fsl
-#source "$FSLDIR/etc/fslconf/fsl.sh"
+export FSLDIR=/usr/local/fsl
+. "$FSLDIR/etc/fslconf/fsl.sh"
 
 if [[ -z "${FSLDIR:-}" ]]
 then
@@ -21,7 +21,7 @@ then
             echo "FSLDIR was unset, and guessed FSLDIR ($FSLDIR) does not contain etc/fslconf/fsl.sh, please specify FSLDIR in the setup script" 1>&2
             exit 1
         else
-            source "$FSLDIR/etc/fslconf/fsl.sh"
+            . "$FSLDIR/etc/fslconf/fsl.sh"
         fi
     else
         echo "fslmaths not found in \$PATH, please install FSL and ensure it is on \$PATH, or edit the setup script to specify its location" 1>&2

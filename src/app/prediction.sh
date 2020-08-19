@@ -1,8 +1,11 @@
 #!/bin/bash
+
 set -eu
 
-source "${PWD}/setUpApp.sh"
-source "${DBN_Libraries}/newopts.shlib" "$@"
+#source "${PWD}/setUpApp.sh"
+. "${PWD}/src/app/setUpApp.sh"
+#source "${DBN_Libraries}/newopts.shlib" "$@"
+. "${DBN_Libraries}/newopts.shlib" "$@"
 
 #this function gets called by opts_ParseArguments when --help is specified
 function usage()
