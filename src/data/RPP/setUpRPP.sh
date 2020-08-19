@@ -46,7 +46,7 @@ unset POSIXLY_CORRECT
 export DBNDIR="${HOME}/proj/DBN"
 export RPPDIR="${DBNDIR}/src/data/RPP"
 # Path to the MNI templates
-export RPP_Templates="${DBNDIR}/data/external/templates"
+export MNI_Templates="${DBNDIR}/data/external/templates"
 # Path to the FNIRT configuration
 export RPP_Config="${RPPDIR}/config"
 # Location of sub-scripts that are used to carry out some steps of the RPP.sh

@@ -209,19 +209,19 @@ main()
 		# Templates
 
 		# Hires T1w MNI template
-		T1wTemplate="${RPP_Templates}/MNI152_T1_0.7mm.nii.gz"
+		T1wTemplate="${MNI_Templates}/MNI152_T1_0.7mm.nii.gz"
 
 		# Hires brain extracted MNI template
-		T1wTemplateBrain="${RPP_Templates}/MNI152_T1_0.7mm_brain.nii.gz"
+		T1wTemplateBrain="${MNI_Templates}/MNI152_T1_0.7mm_brain.nii.gz"
 
 		# Lowres T1w MNI template
-		T1wTemplate2mm="${RPP_Templates}/MNI152_T1_2mm.nii.gz"
+		T1wTemplate2mm="${MNI_Templates}/MNI152_T1_2mm.nii.gz"
 
 		# Hires MNI brain mask template
-		TemplateMask="${RPP_Templates}/MNI152_T1_0.7mm_brain_mask.nii.gz"
+		TemplateMask="${MNI_Templates}/MNI152_T1_0.7mm_brain_mask.nii.gz"
 
 		# Lowres MNI brain mask template
-		Template2mmMask="${RPP_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz"
+		Template2mmMask="${MNI_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz"
 
 		# Other Config Settings
 
