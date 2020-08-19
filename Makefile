@@ -1,7 +1,7 @@
-.PHONY: all example clean clean_example
+.PHONY: all clean
 
-URL_LIFESPANCN="https://pitt.box.com/shared/static/8uwfzmrztqia23o9k2tswzmyc8sutcj7.gz"
-URL_ADNI="https://pitt.box.com/shared/static/h0k2mgo1opbnvqn0e3c2jzijttjp4t8w.gz"
+#URL_LIFESPANCN="https://pitt.box.com/shared/static/8uwfzmrztqia23o9k2tswzmyc8sutcj7.gz"
+URL_ADNI="https://pitt.box.com/shared/static/9u5ztg9zku9etz8glwbdhw581l0plflh.gz"
 URL_MODELS="https://pitt.box.com/shared/static/btqam5ompyci91rvrqnmcw3vtarmxnro.gz"
 URL_DBN_MODEL="https://pitt.box.com/shared/static/jwmwhr53nms1m4049i9q6ugawccx4hjn.gz"
 
@@ -32,7 +32,7 @@ ifeq ($(PIPELINE), RPP)
 	PREPROCESSING_SCRIPT=src/data/RPP/RPPBatch.sh
 else
 	# change to add other pipelines in the future
-	PREPROCESSING_SCRIPT=src/data/RPPBatch.sh
+	PREPROCESSING_SCRIPT=src/data/RPP/RPPBatch.sh
 endif
 
 all: $(OUTPUT_FILE)
