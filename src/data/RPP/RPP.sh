@@ -94,18 +94,18 @@ if [ -z "${DBNDIR}" ]; then
 	#echo "${script_name}: DBNDIR: ${DBNDIR}"
 fi
 
+if [ -z "${DBN_Libraries}" ]; then
+	echo "${script_name}: ABORTING: DBN_Libraries environment variable must be set"
+	exit 1
+#else
+	#echo "${script_name}: DBN_Libraries: ${DBN_Libraries}"
+fi
+
 if [ -z "${RPPDIR}" ]; then
 	echo "${script_name}: ABORTING: RPPDIR environment variable must be set"
 	exit 1
 #else
 	#echo "${script_name}: RPPDIR: ${RPPDIR}"
-fi
-
-if [ -z "${RPP_Libraries}" ]; then
-	echo "${script_name}: ABORTING: RPP_Libraries environment variable must be set"
-	exit 1
-#else
-	#echo "${script_name}: RPP_Libraries: ${RPP_Libraries}"
 fi
 
 if [ -z "${RPP_Scripts}" ]; then
@@ -127,8 +127,8 @@ fi
 #  Load Function Libraries
 # ------------------------------------------------------------------------------
 
-source ${RPP_Libraries}/log.shlib  # Logging related functions
-source ${RPP_Libraries}/opts.shlib # Command line option functions
+. ${DBN_Libraries}/log.shlib  # Logging related functions
+. ${DBN_Libraries}/opts.shlib # Command line option functions
 
 # ------------------------------------------------------------------------------
 #  Usage Description Function
@@ -269,74 +269,84 @@ t1wTemplate2mm=${t1wTemplate2mm}
 
 outputT1wImageString=""
 
-i=1
-for image in $t1wInputImages ; do
-    # reorient $image to mach the orientation of MNI152
-    ${RUN} ${FSLDIR}/bin/fslreorient2std $image ${t1wFolder}/${t1wImage}${i}_gdc
-	# always add the message/parameters specified
-    outputT1wImageString="${outputT1wImageString}${t1wFolder}/${t1wImage}${i}_gdc "
-    i=$(($i+1))
-done
-
-# Average T1w Scans
-echo -e "\n...Averaging T1w Scans"
-
-if [ `echo $t1wInputImages | wc -w` -gt 1 ] ; then
-    log_Msg "Averaging ${t1w} Images, performing simple averaging"
-    log_Msg "mkdir -p ${t1wFolder}/AverageT1wImages"
-    mkdir -p ${t1wFolder}/AverageT1wImages
-    ${RUN} ${RPP_Scripts}/AnatomicalAverage.sh -o ${t1wFolder}/${t1wImage} -s ${t1wTemplate} -m ${templateMask} -n -w ${t1wFolder}/AverageT1wImages --noclean -v -b $brainSize $outputT1wImageString
-else
-    log_Msg "Only one image found, not averaging T1w images, just copying"
-    ${RUN} ${FSLDIR}/bin/imcp ${t1wFolder}/${t1wImage}1_gdc ${t1wFolder}/${t1wImage}
-fi
-
-# ACPC align T1w image to specified MNI Template to create native volume space
-echo -e "\n...Aligning T1w image to ${t1wTemplate} to create native volume space"
-log_Msg "mkdir -p ${t1wFolder}/ACPCAlignment"
-mkdir -p ${t1wFolder}/ACPCAlignment
-${RUN} ${RPP_Scripts}/ACPCAlignment.sh \
-    --workingDir=${t1wFolder}/ACPCAlignment \
-    --in=${t1wFolder}/${t1wImage} \
-    --ref=${t1wTemplate} \
-    --out=${t1wFolder}/${t1wImage}_acpc \
-    --oMat=${t1wFolder}/xfms/acpc.mat \
-    --brainSize=${brainSize}
-
-# Brain Extraction (FNIRT-based Masking)
-echo -e "\n...Performing Brain Extraction using FNIRT-based Masking"
-log_Msg "mkdir -p ${t1wFolder}/BrainExtractionFNIRTbased"
-mkdir -p ${t1wFolder}/BrainExtractionFNIRTbased
-${RUN} ${RPP_Scripts}/BrainExtractionFNIRTbased.sh \
-    --workingDir=${t1wFolder}/BrainExtractionFNIRTbased \
-    --in=${t1wFolder}/${t1wImage}_acpc \
-    --ref=${t1wTemplate} \
-    --refMask=${templateMask} \
-    --ref2mm=${t1wTemplate2mm} \
-    --ref2mmMask=${template2mmMask} \
-    --outBrain=${t1wFolder}/${t1wImage}_acpc_brain \
-    --outBrainMask=${t1wFolder}/${t1wImage}_acpc_brain_mask \
-    --FNIRTConfig=${FNIRTConfig}
-
+#i=1
+#for image in $t1wInputImages ; do
+#    # reorient $image to mach the orientation of MNI152
+#    ${RUN} ${FSLDIR}/bin/fslreorient2std $image ${t1wFolder}/${t1wImage}${i}_gdc
+#	# always add the message/parameters specified
+#    outputT1wImageString="${outputT1wImageString}${t1wFolder}/${t1wImage}${i}_gdc "
+#    i=$(($i+1))
+#done
+#
+## Average T1w Scans
+#echo -e "\n...Averaging T1w Scans"
+#
+#if [ `echo $t1wInputImages | wc -w` -gt 1 ] ; then
+#    log_Msg "Averaging ${t1w} Images, performing simple averaging"
+#    log_Msg "mkdir -p ${t1wFolder}/AverageT1wImages"
+#    mkdir -p ${t1wFolder}/AverageT1wImages
+#    ${RUN} ${RPP_Scripts}/AnatomicalAverage.sh -o ${t1wFolder}/${t1wImage} -s ${t1wTemplate} -m ${templateMask} -n -w ${t1wFolder}/AverageT1wImages --noclean -v -b $brainSize $outputT1wImageString
+#else
+#    log_Msg "Only one image found, not averaging T1w images, just copying"
+#    ${RUN} ${FSLDIR}/bin/imcp ${t1wFolder}/${t1wImage}1_gdc ${t1wFolder}/${t1wImage}
+#fi
+#
+## ACPC align T1w image to specified MNI Template to create native volume space
+#echo -e "\n...Aligning T1w image to ${t1wTemplate} to create native volume space"
+#log_Msg "mkdir -p ${t1wFolder}/ACPCAlignment"
+#mkdir -p ${t1wFolder}/ACPCAlignment
+#${RUN} ${RPP_Scripts}/ACPCAlignment.sh \
+#    --workingDir=${t1wFolder}/ACPCAlignment \
+#    --in=${t1wFolder}/${t1wImage} \
+#    --ref=${t1wTemplate} \
+#    --out=${t1wFolder}/${t1wImage}_acpc \
+#    --oMat=${t1wFolder}/xfms/acpc.mat \
+#    --brainSize=${brainSize}
+#
+## Brain Extraction (FNIRT-based Masking)
+#echo -e "\n...Performing Brain Extraction using FNIRT-based Masking"
+#log_Msg "mkdir -p ${t1wFolder}/BrainExtractionFNIRTbased"
+#mkdir -p ${t1wFolder}/BrainExtractionFNIRTbased
+#${RUN} ${RPP_Scripts}/BrainExtractionFNIRTbased.sh \
+#    --workingDir=${t1wFolder}/BrainExtractionFNIRTbased \
+#    --in=${t1wFolder}/${t1wImage}_acpc \
+#    --ref=${t1wTemplate} \
+#    --refMask=${templateMask} \
+#    --ref2mm=${t1wTemplate2mm} \
+#    --ref2mmMask=${template2mmMask} \
+#    --outBrain=${t1wFolder}/${t1wImage}_acpc_brain \
+#    --outBrainMask=${t1wFolder}/${t1wImage}_acpc_brain_mask \
+#    --FNIRTConfig=${FNIRTConfig}
 
 # ------------------------------------------------------------------------------
 # Create a one-step resampled version of the t1w_acpc outputs
 # ------------------------------------------------------------------------------
 
 echo -e "\n...Creating one-step resampled version of the T1w_acpc output"
+log_Msg "mkdir -p ${t1wFolder}/OneStepResampledACPC"
+mkdir -p ${t1wFolder}/OneStepResampledACPC
 
-# T1w
-${RUN} ${FSLDIR}/bin/fslmerge -t ${t1wFolder}/xfms/${t1wImage} ${t1wFolder}/${t1wImage}_acpc ${t1wFolder}/${t1wImage}_acpc ${t1wFolder}/${t1wImage}_acpc
-${RUN} ${FSLDIR}/bin/fslmaths ${t1wFolder}/xfms/${t1wImage} -mul 0 ${t1wFolder}/xfms/${t1wImage}
-outputOrigT1w2T1w=origT1w2T1w  # Name for one-step resample warpfield
-${RUN} convertwarp --relout --rel --ref=${t1wTemplate} --premat=${t1wFolder}/xfms/acpc.mat --warp1=${t1wFolder}/xfms/${t1wImage} --out=${t1wFolder}/xfms/${outputOrigT1w2T1w}
+${RUN} ${RPP_Scripts}/OneStepResampledACPC.sh \
+    --workingDir=${t1wFolder}/OneStepResampledACPC \
+    --t1=${t1wFolder}/${t1wImage} \
+    --t1ACPC=${t1wFolder}/${t1wImage}_acpc \
+    --t1ACPCBrain=${t1wFolder}/${t1wImage}_acpc_brain \
+    --ref=${t1wTemplate} \
+    --preMat=${t1wFolder}/xfms/acpc.mat \
+	--oT1=${t1wFolder}/${t1wImage}_acpc \
+	--oT1Brain=${t1wFolder}/${t1wImage}_acpc_brain
 
-outputT1wImage=${t1wFolder}/${t1wImage}_acpc
-${RUN} applywarp --rel --interp=spline -i ${t1wFolder}/${t1wImage} -r ${t1wTemplate} -w ${t1wFolder}/xfms/${outputOrigT1w2T1w} -o ${outputT1wImage}
+#${RUN} ${FSLDIR}/bin/fslmerge -t ${t1wFolder}/xfms/${t1wImage} ${t1wFolder}/${t1wImage}_acpc ${t1wFolder}/${t1wImage}_acpc ${t1wFolder}/${t1wImage}_acpc
+#${RUN} ${FSLDIR}/bin/fslmaths ${t1wFolder}/xfms/${t1wImage} -mul 0 ${t1wFolder}/xfms/${t1wImage}
+#outputOrigT1w2T1w=origT1w2T1w  # Name for one-step resample warpfield
+#${RUN} convertwarp --relout --rel --ref=${t1wTemplate} --premat=${t1wFolder}/xfms/acpc.mat --warp1=${t1wFolder}/xfms/${t1wImage} --out=${t1wFolder}/xfms/${outputOrigT1w2T1w}
+
+#outputT1wImage=${t1wFolder}/${t1wImage}_acpc
+#${RUN} applywarp --rel --interp=spline -i ${t1wFolder}/${t1wImage} -r ${t1wTemplate} -w ${t1wFolder}/xfms/${outputOrigT1w2T1w} -o ${outputT1wImage}
 
 # Use -abs (rather than '-thr 0') to avoid introducing zeros
-${RUN} fslmaths ${outputT1wImage} -abs ${outputT1wImage} -odt float
-${RUN} fslmaths ${outputT1wImage} -mas ${t1wFolder}/${t1wImage}_acpc_brain ${outputT1wImage}_brain
+#${RUN} fslmaths ${outputT1wImage} -abs ${outputT1wImage} -odt float
+#${RUN} fslmaths ${outputT1wImage} -mas ${t1wFolder}/${t1wImage}_acpc_brain ${outputT1wImage}_brain
 
 # ------------------------------------------------------------------------------
 #  Atlas Registration to MNI152: FLIRT + FNIRT
