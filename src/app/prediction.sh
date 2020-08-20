@@ -87,7 +87,7 @@ function main()
     IMAGES_DIR="${SUBJECTS_DIR}/Test"
     mkdir -p $IMAGES_DIR
     rsync $SUBJECTS $SUBJECTS_DIR/$subjListFilename
-    python $DBNDIR/src/data/slicer.py ${SUBJECTS_DIR}/ ${IMAGES_DIR}/
+    python $DBNDIR/src/data/slicer.py ${SUBJECTS_DIR} ${IMAGES_DIR}
 
     # Predict brain age and save in output .txt file
     if [ "$OUT_FILE" = "default" ] ; then
@@ -106,5 +106,5 @@ then
 else
     #positional support goes here - just call main with named parameters built from $1, etc
     log_Err_Abort "positional parameter support is not currently implemented"
-    main --data="$1" --study="$2" --pipeline="$3" --output="$4" --b0="$5" --model="$6"
+    main --data="$1" --output="$2" --b0="$3" --model="$4"
 fi

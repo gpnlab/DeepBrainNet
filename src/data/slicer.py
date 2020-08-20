@@ -12,8 +12,8 @@ from PIL import Image
 import sys
 import os
 
-data_dir = str(sys.argv[1])
-interim_dir = str(sys.argv[2])
+data_dir = str(sys.argv[1]) + "/"
+interim_dir = str(sys.argv[2]) + "/"
 
 nii_files = [f for f in os.listdir(os.fsencode(data_dir))
              if f.endswith(b'.nii.gz')]
