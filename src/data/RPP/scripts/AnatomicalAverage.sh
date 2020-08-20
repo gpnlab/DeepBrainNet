@@ -4,18 +4,18 @@ set -e
 # ------------------------------------------------------------------------------
 #  Verify required environment variables are set
 # ------------------------------------------------------------------------------
-if [ -z "${RPP_Templates}" ]; then
-	echo "$(basename ${0}): ABORTING: RPP_Templates environment variable must be set"
+if [ -z "${MNI_Templates}" ]; then
+	echo "$(basename ${0}): ABORTING: MNI_Templates environment variable must be set"
 	exit 1
 else
-	echo "$(basename ${0}): RPP_Templates: ${RPP_Templates}"
+	echo "$(basename ${0}): MNI_Templates: ${MNI_Templates}"
 fi
 
-if [ -z "${RPP_Libraries}" ]; then
-	echo "$(basename ${0}): ABORTING: RPP_Libraries environment variable must be set"
+if [ -z "${DBN_Libraries}" ]; then
+	echo "$(basename ${0}): ABORTING: DBN_Libraries environment variable must be set"
 	exit 1
 else
-	echo "$(basename ${0}): RPP_Libraries: ${RPP_Libraries}"
+	echo "$(basename ${0}): DBN_Libraries: ${DBN_Libraries}"
 fi
 
 if [ -z "${FSLDIR}" ]; then
@@ -27,7 +27,7 @@ fi
 
 ################################################ SUPPORT FUNCTIONS ##################################################
 
-source ${RPP_Libraries}/log.shlib # Logging related functions
+. ${DBN_Libraries}/log.shlib # Logging related functions
 
 Usage() {
     echo ""
@@ -64,8 +64,8 @@ crop=yes
 verbose=no
 wdir=
 cleanup=yes
-StandardImage=${RPP_Templates}/MNI152_T1_2mm.nii.gz
-StandardMask=${RPP_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz
+StandardImage=${MNI_Templates}/MNI152_T1_2mm.nii.gz
+StandardMask=${MNI_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz
 
 if [ $# -eq 0 ] ; then Usage; exit 0; fi
 while [ $# -ge 1 ] ; do

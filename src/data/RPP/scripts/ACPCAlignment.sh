@@ -3,20 +3,20 @@ set -e
 
 # Requirements for this script
 #  installed versions of: FSL (version 5.0.6) (including python with numpy, needed to run aff2rigid - part of FSL)
-#  environment: FSLDIR, RPP_Libraries, and RPP_Templates
+#  environment: FSLDIR, DBN_Libraries, and MNI_Templates
 
-if [ -z "${RPP_Libraries}" ]; then
-	echo "$(basename ${0}): ABORTING: RPP_Libraries environment variable must be set"
+if [ -z "${DBN_Libraries}" ]; then
+	echo "$(basename ${0}): ABORTING: DBN_Libraries environment variable must be set"
 	exit 1
 else
-	echo "$(basename ${0}): RPP_Libraries: ${RPP_Libraries}"
+	echo "$(basename ${0}): DBN_Libraries: ${DBN_Libraries}"
 fi
 
-if [ -z "${RPP_Templates}" ]; then
-	echo "$(basename ${0}): ABORTING: RPP_Templates environment variable must be set"
+if [ -z "${MNI_Templates}" ]; then
+	echo "$(basename ${0}): ABORTING: MNI_Templates environment variable must be set"
 	exit 1
 else
-	echo "$(basename ${0}): RPP_Templates: ${RPP_Libraries}"
+	echo "$(basename ${0}): MNI_Templates: ${DBN_Libraries}"
 fi
 
 if [ -z "${FSLDIR}" ]; then
@@ -28,7 +28,7 @@ fi
 
 ################################################ SUPPORT FUNCTIONS ##################################################
 
-source ${RPP_Libraries}/log.shlib # Logging related functions
+. ${DBN_Libraries}/log.shlib # Logging related functions
 
 Usage() {
   echo "$(basename $0): Tool for creating a 6 DOF alignment of the AC, ACPC line and hemispheric plane in MNI space"
@@ -77,7 +77,7 @@ OutputMatrix=`getopt1 "--oMat" $@`  # "$5"
 BrainSizeOpt=`getopt1 "--brainSize" $@`  # "$6"
 
 # default parameters
-Reference=`defaultopt ${Reference} ${RPP_Templates}/MNI152_T1_1mm`
+Reference=`defaultopt ${Reference} ${MNI_Templates}/MNI152_T1_1mm`
 Output=`$FSLDIR/bin/remove_ext $Output`
 WD=`defaultopt $WD ${Output}.wdir`
 

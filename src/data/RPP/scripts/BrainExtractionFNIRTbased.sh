@@ -3,7 +3,7 @@ set -e
 
 # Requirements for this script
 #  installed versions of: FSL (version 5.0.6)
-#  environment: FSLDIR, RPP_Templates, RPP_Libraries, and RPP_Config
+#  environment: FSLDIR, MNI_Templates, DBN_Libraries, and RPP_Config
 
 
 # ------------------------------------------------------------------------------
@@ -17,11 +17,11 @@ else
 	echo "$(basename ${0}): FSLDIR: ${FSLDIR}"
 fi
 
-if [ -z "${RPP_Templates}" ]; then
-	echo "$(basename ${0}): ABORTING: RPP_Templates environment variable must be set"
+if [ -z "${MNI_Templates}" ]; then
+	echo "$(basename ${0}): ABORTING: MNI_Templates environment variable must be set"
 	exit 1
 else
-	echo "$(basename ${0}): RPP_Templates: ${RPP_Templates}"
+	echo "$(basename ${0}): MNI_Templates: ${MNI_Templates}"
 fi
 
 if [ -z "${RPP_Config}" ]; then
@@ -31,16 +31,16 @@ else
 	echo "$(basename ${0}): RPP_Config: ${RPP_Config}"
 fi
 
-if [ -z "${RPP_Libraries}" ]; then
-	echo "$(basename ${0}): ABORTING: RPP_Libraries environment variable must be set"
+if [ -z "${DBN_Libraries}" ]; then
+	echo "$(basename ${0}): ABORTING: DBN_Libraries environment variable must be set"
 	exit 1
 else
-	echo "$(basename ${0}): RPP_Libraries: ${RPP_Templates}"
+	echo "$(basename ${0}): DBN_Libraries: ${MNI_Templates}"
 fi
 
 ################################################ SUPPORT FUNCTIONS ##################################################
 
-source ${RPP_Libraries}/log.shlib # Logging related functions
+. ${DBN_Libraries}/log.shlib # Logging related functions
 
 Usage() {
   echo "$(basename $0): Tool for performing brain extraction using non-linear (FNIRT) results"
@@ -94,10 +94,10 @@ FNIRTConfig=`getopt1 "--FNIRTConfig" $@` # "$9"
 
 # default parameters
 WD=`defaultopt $WD .`
-Reference=`defaultopt $Reference ${RPP_Templates}/MNI152_T1_0.7mm.nii.gz`
-ReferenceMask=`defaultopt $ReferenceMask ${RPP_Templates}/MNI152_T1_0.7mm_brain_mask.nii.gz`  # dilate to be conservative with final brain mask
-Reference2mm=`defaultopt $Reference2mm ${RPP_Templates}/MNI152_T1_2mm.nii.gz`
-Reference2mmMask=`defaultopt $Reference2mmMask ${RPP_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz`  # dilate to be conservative with final brain mask
+Reference=`defaultopt $Reference ${MNI_Templates}/MNI152_T1_0.7mm.nii.gz`
+ReferenceMask=`defaultopt $ReferenceMask ${MNI_Templates}/MNI152_T1_0.7mm_brain_mask.nii.gz`  # dilate to be conservative with final brain mask
+Reference2mm=`defaultopt $Reference2mm ${MNI_Templates}/MNI152_T1_2mm.nii.gz`
+Reference2mmMask=`defaultopt $Reference2mmMask ${MNI_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz`  # dilate to be conservative with final brain mask
 FNIRTConfig=`defaultopt $FNIRTConfig ${RPP_Config}/T1_2_MNI152_2mm.cnf`
 
 BaseName=`${FSLDIR}/bin/remove_ext $Input`;

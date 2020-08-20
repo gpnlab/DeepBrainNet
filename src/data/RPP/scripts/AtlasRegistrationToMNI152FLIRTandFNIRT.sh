@@ -3,24 +3,24 @@ set -e
 
 # Requirements for this script
 #  installed versions of: FSL (version 5.0.6)
-#  environment: FSLDIR, RPP_Libraries, RPP_Config, RPP_Templates
+#  environment: FSLDIR, DBN_Libraries, RPP_Config, MNI_Templates
 
 # ------------------------------------------------------------------------------
 #  Verify required environment variables are set
 # ------------------------------------------------------------------------------
 
-if [ -z "${RPP_Libraries}" ]; then
-	echo "$(basename ${0}): ABORTING: RPP_Libraries environment variable must be set"
+if [ -z "${DBN_Libraries}" ]; then
+	echo "$(basename ${0}): ABORTING: DBN_Libraries environment variable must be set"
 	exit 1
 #else
-#	echo "$(basename ${0}): RPP_Libraries: ${RPP_Libraries}"
+#	echo "$(basename ${0}): DBN_Libraries: ${DBN_Libraries}"
 fi
 
-if [ -z "${RPP_Templates}" ]; then
-	echo "$(basename ${0}): ABORTING: RPP_Templates environment variable must be set"
+if [ -z "${MNI_Templates}" ]; then
+	echo "$(basename ${0}): ABORTING: MNI_Templates environment variable must be set"
 	exit 1
 #else
-#	echo "$(basename ${0}): RPP_Templates: ${RPP_Templates}"
+#	echo "$(basename ${0}): MNI_Templates: ${MNI_Templates}"
 fi
 
 if [ -z "${RPP_Config}" ]; then
@@ -39,8 +39,8 @@ fi
 
 ################################################ SUPPORT FUNCTIONS ##################################################
 
-source ${RPP_Libraries}/log.shlib # Logging related functions
-source ${RPP_Libraries}/opts.shlib # command line option functions
+. ${DBN_Libraries}/log.shlib # Logging related functions
+. ${DBN_Libraries}/opts.shlib # command line option functions
 
 Usage() {
   echo "`basename $0`: Tool for non-linearly registering T1w and T2w to MNI space (T1w and T2w must already be registered together)"
@@ -96,8 +96,8 @@ FNIRTConfig=`opts_GetOpt1 "--FNIRTConfig" $@`  # "$13"
 
 # default parameters
 WD=`opts_DefaultOpt $WD .`
-Reference2mm=`opts_DefaultOpt $Reference2mm ${RPP_Templates}/MNI152_T1_2mm.nii.gz`
-Reference2mmMask=`opts_DefaultOpt $Reference2mmMask ${RPP_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz`
+Reference2mm=`opts_DefaultOpt $Reference2mm ${MNI_Templates}/MNI152_T1_2mm.nii.gz`
+Reference2mmMask=`opts_DefaultOpt $Reference2mmMask ${MNI_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz`
 FNIRTConfig=`opts_DefaultOpt $FNIRTConfig ${RPP_Config}/T1_2_MNI152_2mm.cnf`
 
 #T1wBasename=`${FSLDIR}/bin/remove_ext $T1w`;

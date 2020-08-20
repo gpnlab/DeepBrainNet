@@ -44,6 +44,8 @@ export LANGUAGE=C
 unset POSIXLY_CORRECT
 
 export DBNDIR="${HOME}/proj/DBN"
+# Location of bash libraries that hold helper functions for the RPP.sh
+export DBN_Libraries="${DBNDIR}/src/global/libs"
 export RPPDIR="${DBNDIR}/src/data/RPP"
 # Path to the MNI templates
 export MNI_Templates="${DBNDIR}/data/external/templates"
@@ -51,5 +53,3 @@ export MNI_Templates="${DBNDIR}/data/external/templates"
 export RPP_Config="${RPPDIR}/config"
 # Location of sub-scripts that are used to carry out some steps of the RPP.sh
 export RPP_Scripts="${RPPDIR}/scripts"
-# Location of bash libraries that hold helper functions for the RPP.sh
-export RPP_Libraries="${RPPDIR}/libs"
