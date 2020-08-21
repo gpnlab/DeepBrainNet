@@ -269,54 +269,54 @@ t1wTemplate2mm=${t1wTemplate2mm}
 
 outputT1wImageString=""
 
-#i=1
-#for image in $t1wInputImages ; do
-#    # reorient $image to mach the orientation of MNI152
-#    ${RUN} ${FSLDIR}/bin/fslreorient2std $image ${t1wFolder}/${t1wImage}${i}_gdc
-#	# always add the message/parameters specified
-#    outputT1wImageString="${outputT1wImageString}${t1wFolder}/${t1wImage}${i}_gdc "
-#    i=$(($i+1))
-#done
-#
-## Average T1w Scans
-#echo -e "\n...Averaging T1w Scans"
-#
-#if [ `echo $t1wInputImages | wc -w` -gt 1 ] ; then
-#    log_Msg "Averaging ${t1w} Images, performing simple averaging"
-#    log_Msg "mkdir -p ${t1wFolder}/AverageT1wImages"
-#    mkdir -p ${t1wFolder}/AverageT1wImages
-#    ${RUN} ${RPP_Scripts}/AnatomicalAverage.sh -o ${t1wFolder}/${t1wImage} -s ${t1wTemplate} -m ${templateMask} -n -w ${t1wFolder}/AverageT1wImages --noclean -v -b $brainSize $outputT1wImageString
-#else
-#    log_Msg "Only one image found, not averaging T1w images, just copying"
-#    ${RUN} ${FSLDIR}/bin/imcp ${t1wFolder}/${t1wImage}1_gdc ${t1wFolder}/${t1wImage}
-#fi
-#
-## ACPC align T1w image to specified MNI Template to create native volume space
-#echo -e "\n...Aligning T1w image to ${t1wTemplate} to create native volume space"
-#log_Msg "mkdir -p ${t1wFolder}/ACPCAlignment"
-#mkdir -p ${t1wFolder}/ACPCAlignment
-#${RUN} ${RPP_Scripts}/ACPCAlignment.sh \
-#    --workingDir=${t1wFolder}/ACPCAlignment \
-#    --in=${t1wFolder}/${t1wImage} \
-#    --ref=${t1wTemplate} \
-#    --out=${t1wFolder}/${t1wImage}_acpc \
-#    --oMat=${t1wFolder}/xfms/acpc.mat \
-#    --brainSize=${brainSize}
-#
-## Brain Extraction (FNIRT-based Masking)
-#echo -e "\n...Performing Brain Extraction using FNIRT-based Masking"
-#log_Msg "mkdir -p ${t1wFolder}/BrainExtractionFNIRTbased"
-#mkdir -p ${t1wFolder}/BrainExtractionFNIRTbased
-#${RUN} ${RPP_Scripts}/BrainExtractionFNIRTbased.sh \
-#    --workingDir=${t1wFolder}/BrainExtractionFNIRTbased \
-#    --in=${t1wFolder}/${t1wImage}_acpc \
-#    --ref=${t1wTemplate} \
-#    --refMask=${templateMask} \
-#    --ref2mm=${t1wTemplate2mm} \
-#    --ref2mmMask=${template2mmMask} \
-#    --outBrain=${t1wFolder}/${t1wImage}_acpc_brain \
-#    --outBrainMask=${t1wFolder}/${t1wImage}_acpc_brain_mask \
-#    --FNIRTConfig=${FNIRTConfig}
+i=1
+for image in $t1wInputImages ; do
+    # reorient $image to mach the orientation of MNI152
+    ${RUN} ${FSLDIR}/bin/fslreorient2std $image ${t1wFolder}/${t1wImage}${i}_gdc
+	# always add the message/parameters specified
+    outputT1wImageString="${outputT1wImageString}${t1wFolder}/${t1wImage}${i}_gdc "
+    i=$(($i+1))
+done
+
+# Average T1w Scans
+echo -e "\n...Averaging T1w Scans"
+
+if [ `echo $t1wInputImages | wc -w` -gt 1 ] ; then
+    log_Msg "Averaging ${t1w} Images, performing simple averaging"
+    log_Msg "mkdir -p ${t1wFolder}/AverageT1wImages"
+    mkdir -p ${t1wFolder}/AverageT1wImages
+    ${RUN} ${RPP_Scripts}/AnatomicalAverage.sh -o ${t1wFolder}/${t1wImage} -s ${t1wTemplate} -m ${templateMask} -n -w ${t1wFolder}/AverageT1wImages --noclean -v -b $brainSize $outputT1wImageString
+else
+    log_Msg "Only one image found, not averaging T1w images, just copying"
+    ${RUN} ${FSLDIR}/bin/imcp ${t1wFolder}/${t1wImage}1_gdc ${t1wFolder}/${t1wImage}
+fi
+
+# ACPC align T1w image to specified MNI Template to create native volume space
+echo -e "\n...Aligning T1w image to ${t1wTemplate} to create native volume space"
+log_Msg "mkdir -p ${t1wFolder}/ACPCAlignment"
+mkdir -p ${t1wFolder}/ACPCAlignment
+${RUN} ${RPP_Scripts}/ACPCAlignment.sh \
+    --workingDir=${t1wFolder}/ACPCAlignment \
+    --in=${t1wFolder}/${t1wImage} \
+    --ref=${t1wTemplate} \
+    --out=${t1wFolder}/${t1wImage}_acpc \
+    --oMat=${t1wFolder}/xfms/acpc.mat \
+    --brainSize=${brainSize}
+
+# Brain Extraction (FNIRT-based Masking)
+echo -e "\n...Performing Brain Extraction using FNIRT-based Masking"
+log_Msg "mkdir -p ${t1wFolder}/BrainExtractionFNIRTbased"
+mkdir -p ${t1wFolder}/BrainExtractionFNIRTbased
+${RUN} ${RPP_Scripts}/BrainExtractionFNIRTbased.sh \
+    --workingDir=${t1wFolder}/BrainExtractionFNIRTbased \
+    --in=${t1wFolder}/${t1wImage}_acpc \
+    --ref=${t1wTemplate} \
+    --refMask=${templateMask} \
+    --ref2mm=${t1wTemplate2mm} \
+    --ref2mmMask=${template2mmMask} \
+    --outBrain=${t1wFolder}/${t1wImage}_acpc_brain \
+    --outBrainMask=${t1wFolder}/${t1wImage}_acpc_brain_mask \
+    --FNIRTConfig=${FNIRTConfig}
 
 # ------------------------------------------------------------------------------
 # Create a one-step resampled version of the t1w_acpc outputs
