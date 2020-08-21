@@ -2,7 +2,7 @@
 
 #URL_LIFESPANCN="https://pitt.box.com/shared/static/8uwfzmrztqia23o9k2tswzmyc8sutcj7.gz"
 URL_ADNI="https://pitt.box.com/shared/static/9u5ztg9zku9etz8glwbdhw581l0plflh.gz"
-URL_MODELS="https://pitt.box.com/shared/static/btqam5ompyci91rvrqnmcw3vtarmxnro.gz"
+URL_MODELS="https://pitt.box.com/shared/static/vufjnf7qbyk0mn15s5rwndn327vea25b.gz"
 URL_DBN_MODEL="https://pitt.box.com/shared/static/jwmwhr53nms1m4049i9q6ugawccx4hjn.gz"
 
 STUDY?=ADNI
@@ -16,16 +16,17 @@ SUBJECTS_BASENAME=$(basename $(SUBJECTS))
 SUBJECTS_BASENAME:=$(notdir $(SUBJECTS_BASENAME))
 B0?=3T
 MODEL?=models/DBN_model.h5
-OUTPUT_DIR=$(DATA_PREPROCESSED)/$(SUBJECTS_BASENAME)
-OUTPUT_FILE = $(OUTPUT_DIR)/brain_ages.txt
+
+DATA_PROCESSED=data/processed/$(STUDY)/$(PIPELINE)/$(SUBJECTS_BASENAME)
+BRAIN_AGES = $(DATA_PROCESSED)/brain_ages.txt
 
 ifeq ($(STUDY), ADNI)
 	URL_DATA=$(URL_ADNI)
-	# change after transfer learning ADNI data
-	URL_MODEL=$(URL_DBN_MODEL)
+	# change after transfer learning target to ADNI data
+	URL_MODEL=$(URL_MODELS)
 else
 	URL_DATA=$(URL_LIFESPANCN)
-	URL_MODEL=$(URL_DBN_MODEL)
+	URL_MODEL=$(URL_MODELS)
 endif
 
 ifeq ($(PIPELINE), RPP)
@@ -35,11 +36,11 @@ else
 	PREPROCESSING_SCRIPT=src/data/RPP/RPPBatch.sh
 endif
 
-all: $(OUTPUT_FILE)
+all: $(BRAIN_AGES)
 
 clean:
-	rm -rf $(OUTPUT_DIR)
-	rm -f $(SUBJECTS_PREPROCESSED)
+	rm -rf $(DATA_PREPROCESSED)
+	rm -rf $(DATA_PROCESSED)
 
 ### GENERAL PIPELINE ###
 # Rule for dowloading raw data
@@ -62,6 +63,5 @@ $(MODEL):
 	bash src/models/download_models.sh  $(URL_MODEL) models
 
 # Rule for predicting brain ages
-$(OUTPUT_FILE): $(DATA_PREPROCESSED) $(SUBJECTS_PREPROCESSED) $(MODEL)
-	bash src/app/prediction.sh --data=$(DATA_PREPROCESSED) --subjects=$(SUBJECTS_PREPROCESSED) --model=$(MODEL) --b0=$(B0) --output=$@
-
+$(BRAIN_AGES): $(DATA_PREPROCESSED) $(SUBJECTS_PREPROCESSED) $(MODEL)
+	bash src/app/prediction.sh --data=$(DATA_PREPROCESSED) --filename=$@ --model=$(MODEL) --b0=$(B0) --out=$(DATA_PROCESSED)

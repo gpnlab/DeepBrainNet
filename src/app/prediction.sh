@@ -31,8 +31,9 @@ Values default to running the example with sample data
 function main()
 {
     opts_AddMandatory '--data' 'DATA_FOLDER' 'data folder Path' "a required value; is the path to the study folder holding the preprocessed data" "--dataFolder"
+    opts_AddMandatory  '--out' 'OUT_FOLDER' 'path to output directory' "--output" "--outDir" "outputFolder" "outFolder"
     opts_AddOptional  '--subjects' 'SUBJECTS' 'path to file with subject IDs' "an optional value; path to a file with the IDs of the subject to be processed" "default"  "--subject" "--subjectList" "--subjList"
-    opts_AddOptional  '--output' 'OUT_FILE' 'path to output file' "an optional value; the output txt file that will hold the brain age predictions" "default"  "--out"
+    opts_AddOptional  '--filename' 'OUT_FILE' 'name of the file with brain ages' "default"  "--output" "--outDir" "outputFolder" "outFolder"
     opts_AddOptional  '--b0' 'B0' 'magnetic field intensity' "an optional value; the scanner magnetic field intensity, e.g., 1.5T, 3T, 7T" "3T"
     opts_AddOptional  '--model' 'MODEL' 'path to .h5 model' "an optional value; path to the model.h5 file" "${DBNDIR}/models/DBN_model.h5"
     opts_ParseArguments "$@"
@@ -71,9 +72,8 @@ function main()
 
     subjListFilename=$(basename -- "${SUBJECTS}")
     subjListFilename="${subjListFilename%.*}"
-    #subjListFilename="${SUBJECTS##*/}"
-    #SUBJECTS_DIR="${DATA_FOLDER}/${STUDY_NAME}/${PIPELINE}/${subjListFilename}"
-    SUBJECTS_DIR="${DATA_FOLDER}/${subjListFilename}"
+
+    SUBJECTS_DIR="${OUT_FOLDER}/${subjListFilename}"
     mkdir -p $SUBJECTS_DIR
     echo -e "\nCycling through list of subjects\n"
     for subject in $subjList ; do
@@ -106,5 +106,5 @@ then
 else
     #positional support goes here - just call main with named parameters built from $1, etc
     log_Err_Abort "positional parameter support is not currently implemented"
-    main --data="$1" --output="$2" --b0="$3" --model="$4"
+    main --data="$1" --out="$2" --subjects="$3" --filename="$4" --b0="$5" --model="$6"
 fi

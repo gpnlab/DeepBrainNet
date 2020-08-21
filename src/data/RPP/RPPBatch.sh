@@ -9,7 +9,7 @@
 #
 # ### Installed software
 #
-# * FSL (version 5.0.6)
+# * FSL
 #
 # ### Environment variables
 #
