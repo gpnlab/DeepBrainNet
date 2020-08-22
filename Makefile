@@ -1,60 +1,67 @@
-.PHONY: all example clean clean_example
+.PHONY: all clean
 
-URL_DATA="https://pitt.box.com/shared/static/8uwfzmrztqia23o9k2tswzmyc8sutcj7.gz"
-URL_MODELS="https://pitt.box.com/shared/static/btqam5ompyci91rvrqnmcw3vtarmxnro.gz"
-URL_EXAMPLE_MODELS="https://pitt.box.com/shared/static/jwmwhr53nms1m4049i9q6ugawccx4hjn.gz"
+#URL_LIFESPANCN="https://pitt.box.com/shared/static/8uwfzmrztqia23o9k2tswzmyc8sutcj7.gz"
+URL_ADNI="https://pitt.box.com/shared/static/9u5ztg9zku9etz8glwbdhw581l0plflh.gz"
+URL_MODELS="https://pitt.box.com/shared/static/vufjnf7qbyk0mn15s5rwndn327vea25b.gz"
+URL_DBN_MODEL="https://pitt.box.com/shared/static/jwmwhr53nms1m4049i9q6ugawccx4hjn.gz"
 
-EXAMPLE_MODELS_FOLDER=example/models/
-EXAMPLE_MODELS=DBN_model
-EXAMPLE_MODELS_PATH=$(EXAMPLE_MODELS_FOLDER)$(EXAMPLE_MODELS).h5
-EXAMPLE_OUT_FILE=example/results/$(EXAMPLE_MODELS)_pred.csv
+STUDY?=ADNI
+DATA_RAW?=data/raw/$(STUDY)
+PIPELINE?=RPP
+DATA_PREPROCESSED?=data/preprocessed/$(STUDY)/$(PIPELINE)
+SUBJECTS?=$(DATA_RAW)/subjects.txt
+SUBJECTS_PREPROCESSED?=$(DATA_PREPROCESSED)/subjects.txt
+# Get filename without extension
+SUBJECTS_BASENAME=$(basename $(SUBJECTS))
+SUBJECTS_BASENAME:=$(notdir $(SUBJECTS_BASENAME))
+B0?=3T
+MODEL?=models/DBN_model.h5
 
-MODELS_FOLDER=models/
-MODEL?=DeepBrainNet_Normalized_General
-MODEL_PATH=$(MODELS_FOLDER)$(MODEL).h5
-OUT_FILE=results/$(MODEL)_pred.csv
+DATA_PROCESSED=data/processed/$(STUDY)/$(PIPELINE)/$(SUBJECTS_BASENAME)
+BRAIN_AGES = $(DATA_PROCESSED)/brain_ages.txt
 
-all: $(OUT_FILE)
+ifeq ($(STUDY), ADNI)
+	URL_DATA=$(URL_ADNI)
+	# change after transfer learning target to ADNI data
+	URL_MODEL=$(URL_MODELS)
+else
+	URL_DATA=$(URL_LIFESPANCN)
+	URL_MODEL=$(URL_MODELS)
+endif
 
-example: $(EXAMPLE_OUT_FILE)
+ifeq ($(PIPELINE), RPP)
+	PREPROCESSING_SCRIPT=src/data/RPP/RPPBatch.sh
+else
+	# change to add other pipelines in the future
+	PREPROCESSING_SCRIPT=src/data/RPP/RPPBatch.sh
+endif
+
+all: $(BRAIN_AGES)
 
 clean:
-	rm -f data/raw/*.nii.gz
-	rm -f data/interim/Test/*
-	rm -f results/*.csv
-	rm -rf models/*.h5
-
-clean_example:
-	rm -f example/data/raw/*.nii.gz
-	rm -f example/data/interim/Test/*
-	rm -f example/results/*.csv
-	rm -rf example/models/*
+	rm -rf $(DATA_PREPROCESSED)
+	rm -rf $(DATA_PROCESSED)
 
 ### GENERAL PIPELINE ###
-# Rules for dowloading raw T1 data
-data/raw/T1_3.nii.gz:
-	sh src/data/download.sh $(URL_DATA) data/raw/
-example/data/raw/T1_3.nii.gz:
-	sh example/scripts/download_data.sh  $(URL_DATA) example/data/raw/
+# Rule for dowloading raw data
+$(DATA_RAW):
+	bash src/data/download.sh $(URL_DATA) $(DATA_RAW)
 
-# Rules for preprocessing data
-data/interim/Test/T1_3-0.jpg: data/raw/T1_3.nii.gz
-	python src/data/slicer.py data/raw/ data/interim/Test/
-# Rule for preprocessing example data
-example/data/interim/Test/T1_3-0.jpg: example/data/raw/T1_3.nii.gz
-	python example/scripts/slicer.py example/data/raw/ example/data/interim/Test/
+$(SUBJECTS): $(DATA_RAW)
+	python src/data/create_subjects_list.py $(DATA_RAW) $@
+
+# Rule for preprocessing raw data
+$(DATA_PREPROCESSED): $(DATA_RAW)
+	bash $(PREPROCESSING_SCRIPT) --studyFolder=$(DATA_RAW) --subjects=$(SUBJECTS) --b0=$(B0) --runLocal
+
+$(SUBJECTS_PREPROCESSED): $(DATA_PREPROCESSED)
+	python src/data/create_subjects_list.py $(DATA_RAW) $@
 
 # Rule for dowloading models
-$(MODEL_PATH):
-	sh src/models/download_models.sh  $(URL_MODELS) $(MODELS_FOLDER)
-# Rule for dowloading example DBN model
-$(EXAMPLE_MODELS_PATH):
-	sh example/scripts/download_model.sh $(URL_EXAMPLE_MODELS) $(EXAMPLE_MODELS_FOLDER)
+# Change to add specific links to specific models online
+$(MODEL):
+	bash src/models/download_models.sh  $(URL_MODEL) models
 
-# Rules for age prediction for models
-$(OUT_FILE): data/interim/Test/T1_3-0.jpg $(MODEL_PATH)
-	python src/app/pred.py data/interim/ $(MODEL_PATH) $@
-# Rule for age prediction for example DBN models
-$(EXAMPLE_OUT_FILE): example/data/interim/Test/T1_3-0.jpg $(EXAMPLE_MODELS_PATH)
-	python example/scripts/pred.py example/data/interim/ $(EXAMPLE_MODELS_PATH) $@
-	cp $(EXAMPLE_OUT_FILE) results/$(EXAMPLE_MODELS)_pred.csv
+# Rule for predicting brain ages
+$(BRAIN_AGES): $(DATA_PREPROCESSED) $(SUBJECTS_PREPROCESSED) $(MODEL)
+	bash src/app/prediction.sh --data=$(DATA_PREPROCESSED) --filename=$@ --model=$(MODEL) --b0=$(B0) --out=$(DATA_PROCESSED)
