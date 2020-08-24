@@ -158,8 +158,6 @@ Usage: RPP.sh [options]
   --brainSize=<size value>          Brain size estimate in mm, 150 for humans
   --FNIRTConfig=<file path>         FNIRT 2mm T1w Configuration file
 
-  --topUpConfig=<file path>      Configuration file for topup or "NONE" if not
-								 used
 EOF
 	exit 1
 }

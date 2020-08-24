@@ -76,4 +76,5 @@ predicty1 = final_prediction
 out_data = pd.DataFrame()
 out_data['ID'] = IDSet
 out_data['Pred_Age'] = predicty1
+out_data.sort_values(by=['ID'])
 out_data.to_csv(out_file, index=False)

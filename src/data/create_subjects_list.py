@@ -23,7 +23,7 @@ out_file = sys.argv[2]
 IDList = [x[1] for x in walklevel(data_dir, level=1)]
 # Flattening the list of IDs
 IDList = [x for ID in IDList for x in ID]
-
+IDList.sort()
 if not os.path.exists(out_file):
     with open(out_file, 'w+') as outFile:
         outFile.writelines("%s\n" % ID for ID in IDList)
