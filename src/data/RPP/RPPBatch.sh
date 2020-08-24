@@ -241,7 +241,7 @@ main()
 		fi
 
         # Create log folder
-        logDir="${DBNDIR}/logs/RPP/${studyFolderBasename}/${subject}/${b0}"
+        logDir="${DBNDIR}/logs/${studyFolderBasename}/RPP/${subject}/${b0}"
         mkdir -p $logDir
 
 		# Run (or submit to be run) the RPP.sh script
@@ -260,7 +260,7 @@ main()
 			--brainSize="$BrainSize" \
 			--FNIRTConfig="$FNIRTConfig" \
 			--printcom=$PRINTCOM \
-            &> $logDir/MNINonLinear.txt
+            &> "$logDir"/"$subject".txt
 
 	done
 }

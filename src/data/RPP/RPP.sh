@@ -373,4 +373,4 @@ ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRTandFNIRT.sh \
 	--oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain \
 	--FNIRTConfig=${FNIRTConfig}
 
-echo -e "\nMNINonLinear Completed"
+echo -e "\nRPP Completed"
