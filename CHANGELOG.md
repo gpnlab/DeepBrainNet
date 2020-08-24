@@ -6,6 +6,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2020-08-17
+### Added
+- version.txt shows version
+- product.txt shows tool name
+- src/global/libs/newopts.shlib named parameter parsing code
+- src/global/libs/log.shlib log to command line helpers
+- src/global/config/setUpDBN.sh setup FSL and package paths
+- src/data/create_subjects_list.py makes list of subjects in a given folder
+- src/data/RPP Registration-based Preprocessing Pipeline
+- src/app/prediction.sh predicts a brain age given a brain extracted, MNI registered T1w Image
+- src/app/setUpApp.sh sets global variables for prediction.sh
+- example/scripts/download_data.sh
+
+### Changed
+- src/data/donwload.sh is more general
+- src/models/donwload_models.sh is more general
+- README.md explains how to use the RPP
+- src/app/pred.py clean dead code and change how to create IDList
+- .gitignore now excludes logs from source control by default
+- Makefile Added preprocessing using RPP into the pipeline
+
+### Removed
+
+### Fixed
+- src/data/slicer.py fix "/" in data paths
+- example/scripts/slicer.py fix "/" in data paths
+
 ## [0.0.1] - 2020-08-03
 ### Added
 - app/pred.py applies model to data e return estimated brain age
@@ -27,5 +54,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-[Unreleased]:https://github.com/gpnlab/DeepBrainNet/compare/v0.0.1...HEAD
+[Unreleased]:https://github.com/gpnlab/DeepBrainNet/compare/v1.0.0...HEAD
+[1.0.0]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v1.0.0
 [0.0.1]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v0.0.1
