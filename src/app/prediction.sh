@@ -3,7 +3,10 @@
 set -eu
 
 #source "${PWD}/setUpApp.sh"
-. "${PWD}/src/app/setUpApp.sh"
+#. "${PWD}/src/app/setUpApp.sh"
+# Get absolute path of setUpRPP.sh
+setup=$( cd "$(dirname "$0")" ; pwd )
+. "${setup}/setUpApp.sh"
 #source "${DBN_Libraries}/newopts.shlib" "$@"
 . "${DBN_Libraries}/newopts.shlib" "$@"
 

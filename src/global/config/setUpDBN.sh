@@ -1,7 +1,7 @@
 #!/bin/echo This script should be sourced before calling a pipeline script, and should not be run directly:
-
-export DBNDIR=$(cd "$(dirname "$0")" ; pwd)
+DBNDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 export DBNDIR=$(dirname "$(dirname "$(dirname "$DBNDIR")")")
+
 
 # Uncomment the following line (remove the leading #) and correct the DBNDIR setting for your setup
 #export DBNDIR="${HOME}/proj/DBN"
@@ -14,6 +14,8 @@ export DBNDIR=$(dirname "$(dirname "$(dirname "$DBNDIR")")")
 export DBN_Libraries="${DBNDIR}/src/global/libs"
 # Location of the Registration based preprocessing pipeline
 export RPPDIR="${DBNDIR}/src/data/RPP"
+# Location of the application directory
+export APPDIR="${DBNDIR}/src/app"
 # Path to the MNI templates
 export MNI_Templates="${DBNDIR}/data/external/templates"
 
@@ -41,7 +43,7 @@ then
     fi
 fi
 
-#add the specified version to the front of $PATH, so we can stop using absolute paths everywhere
+# add the specified version to the front of $PATH, so we can stop using absolute paths everywhere
 
 # extra setup bits that the user should never need to edit
 

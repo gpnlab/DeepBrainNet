@@ -105,11 +105,15 @@ main()
 
 	# Set variable values that locate and specify data to process
 
+	# Set up pipeline environment variables and software
+    # Get absolute path of setUpRPP.sh
+    setup=$( cd "$(dirname "$0")" ; pwd )
+    . "${setup}/setUpRPP.sh"
+	#. "${PWD}/setUpRPP.sh"
     # Get the root directory; PWD points to ./src/data/RPP
-    #DBNDIR=get_parendir(get_parendir(get_parendir($(pwd))))
-    DBNDIR="${HOME}/proj/DBN"
+    #DBNDIR="${HOME}/proj/DBN"
     # Get the RPP directory
-    RPPDIR="${DBNDIR}/src/data/RPP"
+    #RPPDIR="${DBNDIR}/src/data/RPP"
 
     # Location of subject folders (named by subjectID)
     studyFolder="${DBNDIR}/data/raw/ADNI"
@@ -120,7 +124,7 @@ main()
     # Magnitude of the magnetic field used
     b0="3T"
     # Pipeline environment script
-	environmentScript="${RPPDIR}/setUpRPP.sh"
+	# environmentScript="${RPPDIR}/setUpRPP.sh"
 
 	# Use any command line specified options to override any of the variables above
 	if [ -n "${command_line_specified_study_folder}" ]; then
@@ -168,8 +172,6 @@ main()
 	echo "b0: ${b0}"
 	echo "Run locally: ${command_line_specified_run_local}"
 
-	# Set up pipeline environment variables and software
-	source ${environmentScript}
 
 	# Define processing queue to be used if submitted to job scheduler
 	QUEUE="-q long.q"
