@@ -3,7 +3,6 @@
 #URL_LIFESPANCN="https://pitt.box.com/shared/static/8uwfzmrztqia23o9k2tswzmyc8sutcj7.gz"
 URL_ADNI="https://pitt.box.com/shared/static/9u5ztg9zku9etz8glwbdhw581l0plflh.gz"
 URL_MODELS="https://pitt.box.com/shared/static/vufjnf7qbyk0mn15s5rwndn327vea25b.gz"
-URL_DBN_MODEL="https://pitt.box.com/shared/static/jwmwhr53nms1m4049i9q6ugawccx4hjn.gz"
 
 STUDY?=ADNI
 DATA_RAW?=data/raw/$(STUDY)
@@ -61,7 +60,7 @@ $(SUBJECTS_PREPROCESSED): $(DATA_PREPROCESSED)
 # Rule for dowloading models
 # Change to add specific links to specific models online
 $(MODEL):
-	bash src/models/download_models.sh  $(URL_MODEL) models
+	bash src/models/models.sh  $(URL_MODEL) models
 
 # Rule for predicting brain ages
 $(BRAIN_AGES): $(DATA_PREPROCESSED) $(SUBJECTS_PREPROCESSED) $(MODEL)
