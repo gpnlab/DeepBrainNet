@@ -52,7 +52,7 @@ $(SUBJECTS): $(DATA_RAW)
 
 # Rule for preprocessing raw data
 $(DATA_PREPROCESSED): $(DATA_RAW)
-	bash $(PREPROCESSING_SCRIPT) --studyFolder=$(DATA_RAW) --subjects=$(SUBJECTS) --b0=$(B0) --runLocal --linear
+	bash $(PREPROCESSING_SCRIPT) --studyFolder=$(DATA_RAW) --subjects=$(SUBJECTS) --b0=$(B0) --runLocal=yes --linear=yes
 
 $(SUBJECTS_PREPROCESSED): $(DATA_PREPROCESSED)
 	python src/data/create_subjects_list.py $(DATA_PREPROCESSED) $@

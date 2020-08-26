@@ -22,168 +22,87 @@
 #
 # <!-- References -->
 
-###################################################################################
-# Function: get_batch_options
-# Description
-#
-#   Retrieve the following command line parameter values if specified
-#
-#   --studyFolder= - primary study folder containing subject ID subdirectories
-#   --subjects=    - quoted, space separated list of subject IDs on which
-#                    to run the pipeline
-#   --b0=          - Magnitute of the magnetic field used (3T or 7T)
-#                    to run the pipeline
-#   --runLocal     - if specified (without an argument), processing is run
-#                    on "this" machine as opposed to being submitted to a
-#                    computing grid
-#
-#   Set the values of the following global variables to reflect command
-#   line specified parameters
-#
-#   command_line_specified_study_folder
-#   command_line_specified_subj_list
-#   command_line_specified_b0
-#   command_line_specified_run_local
-#
-#   These values are intended to be used to override any values set
-#   directly within this script file
-get_batch_options() {
-	local arguments=("$@")
+set -eu
 
-	unset command_line_specified_study_folder
-	unset command_line_specified_subj
-	unset command_line_specified_b0
-	unset command_line_specified_run_local
-	unset command_line_specified_debug_mode
-	unset command_line_specified_linear_mode
+setup=$( cd "$(dirname "$0")" ; pwd )
+. "${setup}/setUpRPP.sh"
+. "${DBN_Libraries}/newopts.shlib" "$@"
 
-	local index=0
-	local numArgs=${#arguments[@]}
-	local argument
+# This function gets called by opts_ParseArguments when --help is specified
+function usage() {
+    # header text
+    echo "
+        $log_ToolName: Batch script for running the Registration-based Preprocessing Phase.
 
-	while [ ${index} -lt ${numArgs} ]; do
-		argument=${arguments[index]}
+        Usage: $log_ToolName --studyFolder=<path to the folder with subject images>
+                             --subjects=<file or list of subject IDs>
+                             [--b0=<scanner magnetic field intensity] default=3T
+                             [--runLocal=<do (not) run locally>] default=yes
+                             [--linear=<select (non)linear registered image>] default=yes
+                             [--debugMode=<do(non) perform a dry run>] default=yes
 
-		case ${argument} in
-			--studyFolder=*)
-				command_line_specified_study_folder=${argument#*=}
-				index=$(( index + 1 ))
-				;;
-			--subjects=*)
-				command_line_specified_subj=${argument#*=}
-				index=$(( index + 1 ))
-				;;
-			--b0=*)
-				command_line_specified_b0=${argument#*=}
-				index=$(( index + 1 ))
-				;;
-			--runLocal)
-				command_line_specified_run_local="TRUE"
-				index=$(( index + 1 ))
-				;;
-			--debugMode)
-				command_line_specified_debug_mode="TRUE"
-				index=$(( index + 1 ))
-				;;
-			--linear)
-				command_line_specified_linear_mode="TRUE"
-				index=$(( index + 1 ))
-				;;
-			*)
-				echo ""
-				echo "ERROR: Unrecognized Option: ${argument}"
-				echo ""
-				exit 1
-				;;
-		esac
-	done
+        PARAMETERs are [ ] = optional; < > = user supplied value
+
+        Values default to running the example with sample data
+    "
+    # automatic argument descriptions
+    opts_ShowArguments
 }
 
-###################################################################################
-# Function: main
-# Description
+get_subjList() {
+    # If a file with the subject ID was passed
+    subjList=""
+    if [ -f "${1}" ] ; then
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            subjList="$subjList $line"
+        done < "$1"
+    # Instead a list was passed
+    else
+        subjList="$1"
+    fi
 
-#   main processing work of this script
-main()
-{
-	get_batch_options "$@"
+    # Sort subject list
+    IFS=$'\n' # only word-split on '\n'
+    subjList=( $( printf "%s\n" ${subjList[@]} | sort -n) ) # sort
+    IFS=$' \t\n' # restore the default
+}
 
-	# Set variable values that locate and specify data to process
+function main() {
+    opts_AddMandatory '--studyFolder' 'studyFolder' 'raw data folder path' "a required value; is the path to the study folder holding the raw data. Don't forget the study name (e.g. ${DBNDIR}/data/raw/ADNI)"
+    opts_AddMandatory '--subjects' 'subjects' 'path to file with subject IDs' "an optional value; path to a file with the IDs of the subject to be processed (e.g. ${DBNDIR}/data/rawe/ADNI/subjects/txt)" "--subject" "--subjectList" "--subjList"
+    opts_AddOptional  '--b0' 'b0' 'magnetic field intensity' "an optional value; the scanner magnetic field intensity, e.g., 1.5T, 3T, 7T" "3T"
+    opts_AddOptional  '--runLocal' 'runLocal' 'do (not) run locallly' "an optinal value; indicates if processing is run on "this" machine as opposed to being submitted to a computing grid"  "yes"
+    opts_AddOptional  '--linear'  'linear' '(non)linear registration to MNI' "an optional value; if it is set then only an affine registration to MNI is performed, otherwise, a nonlinear registration to MNI is performed" "yes"
+    opts_AddOptional  '--debugMode' 'PRINTCOM' 'do (not) perform a dray run' "an optional value; If PRINTCOM is not a null or empty string variable, then this script and other scripts that it calls will simply print out the primary commands it otherwise would run. This printing will be done using the command specified in the PRINTCOM variable, e.g., echo" "" "--PRINTCOM" "--printcom"
+
+    opts_ParseArguments "$@"
+
+    # Display the parsed/default values
+    opts_ShowValues
+
+    # Processing code goes here
 
 	# Set up pipeline environment variables and software
+
+    # Pipeline environment script
     # Get absolute path of setUpRPP.sh
     setup=$( cd "$(dirname "$0")" ; pwd )
     . "${setup}/setUpRPP.sh"
-	#. "${PWD}/setUpRPP.sh"
-    # Get the root directory; PWD points to ./src/data/RPP
-    #DBNDIR="${HOME}/proj/DBN"
-    # Get the RPP directory
-    #RPPDIR="${DBNDIR}/src/data/RPP"
 
     # Location of subject folders (named by subjectID)
-    studyFolder="${DBNDIR}/data/raw/ADNI"
     studyFolderBasename=`basename $studyFolder`;
-
-    # Space delimited list of subject IDs or file with subject list
-    subjects="${DBNDIR}/data/raw/ADNI/subjects.txt"
-    # Magnitude of the magnetic field used
-    b0="3T"
-    # Pipeline environment script
-	# environmentScript="${RPPDIR}/setUpRPP.sh"
-
-	# Use any command line specified options to override any of the variables above
-	if [ -n "${command_line_specified_study_folder}" ]; then
-		studyFolder="${command_line_specified_study_folder}"
-	fi
-
-	if [ -n "${command_line_specified_subj}" ]; then
-		subjects="${command_line_specified_subj}"
-	fi
-
-	if [ -n "${command_line_specified_b0}" ]; then
-		b0="${command_line_specified_b0}"
-	fi
-
-	if [ -n "${command_line_linear_mode}" ]; then
-        echo -e "\nRunning Mode: NonLinear Registration to MNI"
-		linear="no"
-    else
-        echo -e "\nRunning Mode: Linear Registration to MNI"
-		linear="yes"
-	fi
-
-	# If PRINTCOM is not a null or empty string variable, then this script and
-    # other scripts that it calls will simply print out the primary commands it
-    # otherwise would run. This printing will be done using the command specified
-    # in the PRINTCOM variable
-	#PRINTCOM=""
-    # Establish queuing command based on command line option
-    if [ -n "${command_line_specified_debug_mode}" ] ; then
-        echo -e "\nRunning in debug mode"
-        PRINTCOM="echo"
-    else
-        PRINTCOM=""
-    fi
-
 
 	# Report major script control variables to user
     echo -e "\nMajor script control variables\n"
 	echo "studyFolder: ${studyFolder}"
 
-    # If a file with the subject ID was passed
-    if [ -f "${subjects}" ] ; then
-        while IFS= read -r line || [[ -n "$line" ]]; do
-            subjList="$subjList $line"
-        done < "$subjects"
-    # Instead a list was passed
-    else
-        subjList="$subjects"
-    fi
-
+    get_subjList $subjects
 	echo "subjList: ${subjList}"
-	echo "environmentScript: ${environmentScript}"
+	echo "environmentScript: ${setup}/setUpRPP.sh"
 	echo "b0: ${b0}"
-	echo "Run locally: ${command_line_specified_run_local}"
+	echo "runLocal: ${runLocal}"
+	echo "linear: ${linear}"
+	echo "debugMode: ${PRINTCOM}"
 
 
 	# Define processing queue to be used if submitted to job scheduler
@@ -247,7 +166,7 @@ main()
 		FNIRTConfig="${RPP_Config}/T1_2_MNI152_2mm.cnf"
 
 		# Establish queuing command based on command line option
-		if [ -n "${command_line_specified_run_local}" ] ; then
+		if [ $runLocal = yes ] ; then
 			echo -e "\nAbout to run ${RPPDIR}/RPP.sh\n"
 			queuing_command=""
 		else
@@ -281,5 +200,11 @@ main()
     done
 }
 
-# Invoke the main function to get things started
-main "$@"
+if (($# == 0)) || [[ "$1" == --* ]] ; then
+    #named parameters
+    main "$@"
+else
+    #positional support goes here - just call main with named parameters built from $1, etc
+    log_Err_Abort "positional parameter support is not currently implemented"
+    main --studyFolder="$1" --subjects="$2" --b0="$3" --runLocal="$4" --linear="$5" --debugMode="$6"
+fi

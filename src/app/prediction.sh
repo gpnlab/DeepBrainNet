@@ -105,8 +105,7 @@ function main()
     rsync $OUT_FILE $SUBJECTS_DIR/brain_ages.txt
 }
 
-if (($# == 0)) || [[ "$1" == --* ]]
-then
+if (($# == 0)) || [[ "$1" == --* ]] ; then
     #named parameters
     main "$@"
 else
