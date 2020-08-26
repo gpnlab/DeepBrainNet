@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2020-08-26
+### Added
+- src/data/RPP/scripts/AnatomicalAverage_old.sh for backwards compability
+- src/data/RPP/scripts/AtlasRegistrationToMNI152FLIRT.sh linear atlas registration to MNI152
+- src/data/get_preprocessed_subjects.sh create a list of logged subject IDs
+
+### Changed
+- Makefile add linear input parameter to scripts by default
+- src/app/pred.py sort ID values
+- src/data/create_subjects_list.py sort ID values
+- src/app/prediction.sh add linear registration support
+- src/app/RPP.sh add linear registration support
+- src/app/RPPBatch.sh add linear registration support
+- src/data/RPP/scripts/AnatomicalAverage.sh improved input parsing method
+- src/data/RPP/scripts/AtlasRegistrationToMNI152FLIRTandFNIRT.sh explicity mention  nonlinear atlas registration
+- src/models/download.sh rename and make download script general
+
+### Removed
+
+### Fixed
+- src/app/prediction.sh fix setup path
+- src/app/setUpApp.sh cleanup by calling src/global/config/setUpDBN.sh
+- src/app/setUpRPP.sh global setup path is independent of calling script
+- src/global/config/setUpDBN.sh DBNDIR path is independent of calling script
+
 ## [1.0.0] - 2020-08-17
 ### Added
 - version.txt shows version
