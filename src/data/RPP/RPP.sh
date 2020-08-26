@@ -43,7 +43,7 @@
 # at ${studyFolder}/${subject}.  The main output directories are:
 #
 # * The t1wFolder: ${DBNDir}/data/interim/${studyFolder}/${subject}/{b0}/t1w
-# * The atlasSpaceFolder: ${studyFolder}/${subject}/${b0}/MNINonLinear
+# * The atlasSpaceFolder: ${studyFolder}/${subject}/${b0}/MNI(Non)Linear
 #
 # All outputs are generated in directories at or below these two main
 # output directories.  The full list of output directories is:
@@ -156,10 +156,9 @@ Usage: RPP.sh [options]
   --templateMask=<file path>        Brain mask MNI Template
   --template2mmMask=<file path>     Brain mask MNI 2mm Template
   --brainSize=<size value>          Brain size estimate in mm, 150 for humans
+  --linear=<yes/no>                 Do (not) use FNIRT for image registration to MNI
   --FNIRTConfig=<file path>         FNIRT 2mm T1w Configuration file
 
-  --topUpConfig=<file path>      Configuration file for topup or "NONE" if not
-								 used
 EOF
 	exit 1
 }
@@ -167,6 +166,7 @@ EOF
 # ------------------------------------------------------------------------------
 #  Establish tool name for logging
 # ------------------------------------------------------------------------------
+
 log_SetToolName "RPP.sh"
 
 # ------------------------------------------------------------------------------
@@ -193,8 +193,8 @@ t1wTemplate2mm=`opts_GetOpt1 "--t1Template2mm" $@`
 templateMask=`opts_GetOpt1 "--templateMask" $@`
 template2mmMask=`opts_GetOpt1 "--template2mmMask" $@`
 brainSize=`opts_GetOpt1 "--brainSize" $@`
+linear=`opts_GetOpt1 "--linear" $@`
 FNIRTConfig=`opts_GetOpt1 "--FNIRTConfig" $@`
-
 # Use --printcom=echo for just printing everything and not actually
 # running the commands (the default is to actually run the commands)
 RUN=`opts_GetOpt1 "--printcom" $@`
@@ -219,6 +219,7 @@ log_Msg "Finished Parsing Command Line Options"
 # ------------------------------------------------------------------------------
 #  Show Environment Variables
 # ------------------------------------------------------------------------------
+
 echo -e "\nEnvironment Variables"
 log_Msg "FSLDIR: ${FSLDIR}"
 log_Msg "DBNDIR: ${DBNDIR}"
@@ -227,14 +228,11 @@ log_Msg "RPPDIR: ${RPPDIR}"
 # Naming Conventions
 t1wImage="T1w"
 t1wFolder="T1w" #Location of T1w images
-atlasSpaceFolder="MNINonLinear"
 
 # Build Paths
 t1wFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${t1wFolder}
-atlasSpaceFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${atlasSpaceFolder}
 
 log_Msg "t1wFolder: $t1wFolder"
-log_Msg "atlasSpaceFolder: $atlasSpaceFolder"
 
 # Unpack List of Images
 t1wInputImages=`echo ${t1wInputImages} | sed 's/@/ /g'`
@@ -242,11 +240,6 @@ t1wInputImages=`echo ${t1wInputImages} | sed 's/@/ /g'`
 if [ ! -e ${t1wFolder}/xfms ] ; then
 	log_Msg "mkdir -p ${t1wFolder}/xfms/"
 	mkdir -p ${t1wFolder}/xfms/
-fi
-
-if [ ! -e ${atlasSpaceFolder}/xfms ] ; then
-	log_Msg "mkdir -p ${atlasSpaceFolder}/xfms/"
-	mkdir -p ${atlasSpaceFolder}/xfms/
 fi
 
 # ------------------------------------------------------------------------------
@@ -260,16 +253,18 @@ fi
 #  - Perform Brain Extraction (FNIRT-based Masking)
 # ------------------------------------------------------------------------------
 
-# set up appropriate input variables
+# ------------------------------------------------------------------------------
+# Set up appropriate input variables
+# ------------------------------------------------------------------------------
+
 t1wInputImages="${t1wInputImages}"
 t1wFolder=${t1wFolder}
 t1wImage=${t1wImage}
 t1wTemplate=${t1wTemplate}
 t1wTemplate2mm=${t1wTemplate2mm}
 
-outputT1wImageString=""
-
 i=1
+outputT1wImageString=""
 for image in $t1wInputImages ; do
     # reorient $image to mach the orientation of MNI152
     ${RUN} ${FSLDIR}/bin/fslreorient2std $image ${t1wFolder}/${t1wImage}${i}_gdc
@@ -278,20 +273,35 @@ for image in $t1wInputImages ; do
     i=$(($i+1))
 done
 
+# ------------------------------------------------------------------------------
 # Average T1w Scans
-echo -e "\n...Averaging T1w Scans"
+# ------------------------------------------------------------------------------
 
+echo -e "\n...Averaging T1w Scans"
 if [ `echo $t1wInputImages | wc -w` -gt 1 ] ; then
     log_Msg "Averaging ${t1w} Images, performing simple averaging"
     log_Msg "mkdir -p ${t1wFolder}/AverageT1wImages"
     mkdir -p ${t1wFolder}/AverageT1wImages
-    ${RUN} ${RPP_Scripts}/AnatomicalAverage.sh -o ${t1wFolder}/${t1wImage} -s ${t1wTemplate} -m ${templateMask} -n -w ${t1wFolder}/AverageT1wImages --noclean -v -b $brainSize $outputT1wImageString
+    #${RUN} ${RPP_Scripts}/AnatomicalAverage_old.sh -o ${t1wFolder}/${t1wImage} -s ${t1wTemplate} -m ${templateMask} -n -w ${t1wFolder}/AverageT1wImages --noclean -v -b $brainSize $outputT1wImageString
+    ${RUN} ${RPP_Scripts}/AnatomicalAverage.sh \
+        --workingDir=${t1wFolder}/AverageT1wImages \
+        --imageList=${outputT1wImageString} \
+        --ref=${t1wTemplate} \
+        --refMask=${templateMask} \
+        --brainSize=${brainSize} \
+        --out=${t1wFolder}/${t1wImage} \
+        --crop=no \
+        --clean=no \
+        --verbose=yes
 else
     log_Msg "Only one image found, not averaging T1w images, just copying"
     ${RUN} ${FSLDIR}/bin/imcp ${t1wFolder}/${t1wImage}1_gdc ${t1wFolder}/${t1wImage}
 fi
 
+# ------------------------------------------------------------------------------
 # ACPC align T1w image to specified MNI Template to create native volume space
+# ------------------------------------------------------------------------------
+
 echo -e "\n...Aligning T1w image to ${t1wTemplate} to create native volume space"
 log_Msg "mkdir -p ${t1wFolder}/ACPCAlignment"
 mkdir -p ${t1wFolder}/ACPCAlignment
@@ -303,7 +313,10 @@ ${RUN} ${RPP_Scripts}/ACPCAlignment.sh \
     --oMat=${t1wFolder}/xfms/acpc.mat \
     --brainSize=${brainSize}
 
+# ------------------------------------------------------------------------------
 # Brain Extraction (FNIRT-based Masking)
+# ------------------------------------------------------------------------------
+
 echo -e "\n...Performing Brain Extraction using FNIRT-based Masking"
 log_Msg "mkdir -p ${t1wFolder}/BrainExtractionFNIRTbased"
 mkdir -p ${t1wFolder}/BrainExtractionFNIRTbased
@@ -336,41 +349,72 @@ ${RUN} ${RPP_Scripts}/OneStepResampledACPC.sh \
 	--oT1=${t1wFolder}/${t1wImage}_acpc \
 	--oT1Brain=${t1wFolder}/${t1wImage}_acpc_brain
 
-#${RUN} ${FSLDIR}/bin/fslmerge -t ${t1wFolder}/xfms/${t1wImage} ${t1wFolder}/${t1wImage}_acpc ${t1wFolder}/${t1wImage}_acpc ${t1wFolder}/${t1wImage}_acpc
-#${RUN} ${FSLDIR}/bin/fslmaths ${t1wFolder}/xfms/${t1wImage} -mul 0 ${t1wFolder}/xfms/${t1wImage}
-#outputOrigT1w2T1w=origT1w2T1w  # Name for one-step resample warpfield
-#${RUN} convertwarp --relout --rel --ref=${t1wTemplate} --premat=${t1wFolder}/xfms/acpc.mat --warp1=${t1wFolder}/xfms/${t1wImage} --out=${t1wFolder}/xfms/${outputOrigT1w2T1w}
-
-#outputT1wImage=${t1wFolder}/${t1wImage}_acpc
-#${RUN} applywarp --rel --interp=spline -i ${t1wFolder}/${t1wImage} -r ${t1wTemplate} -w ${t1wFolder}/xfms/${outputOrigT1w2T1w} -o ${outputT1wImage}
-
-# Use -abs (rather than '-thr 0') to avoid introducing zeros
-#${RUN} fslmaths ${outputT1wImage} -abs ${outputT1wImage} -odt float
-#${RUN} fslmaths ${outputT1wImage} -mas ${t1wFolder}/${t1wImage}_acpc_brain ${outputT1wImage}_brain
-
 # ------------------------------------------------------------------------------
-#  Atlas Registration to MNI152: FLIRT + FNIRT
+#  Atlas Registration to MNI152
 #  Also applies the MNI registration to T1w image
-#  (although, these will be overwritten, and the final versions generated via
-#  a one-step resampling equivalent in PostFreeSurfer/CreateMyelinMaps.sh;
-#  so, the primary purpose of the following is to generate the Atlas Registration itself).
+#  Performs either FLIRT or FLIRT + FNIRT depending on the value of $linear
 # ------------------------------------------------------------------------------
 
-echo -e "\n...Performing Atlas Registration to MNI152 (FLIRT and FNIRT)"
+if [ $linear = yes ] ; then
 
-${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRTandFNIRT.sh \
-	--workingDir=${atlasSpaceFolder} \
-	--t1=${t1wFolder}/${t1wImage}_acpc \
-	--t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
-	--ref=${t1wTemplate} \
-	--refBrain=${t1wTemplateBrain} \
-	--refMask=${templateMask} \
-	--ref2mm=${t1wTemplate2mm} \
-	--ref2mmMask=${template2mmMask} \
-	--oWarp=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
-	--oInvWarp=${atlasSpaceFolder}/xfms/standard2acpc_dc.nii.gz \
-	--oT1=${atlasSpaceFolder}/${t1wImage} \
-	--oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain \
-	--FNIRTConfig=${FNIRTConfig}
+    # ------------------------------------------------------------------------------
+    #  Atlas Registration to MNI152: FLIRT
+    # ------------------------------------------------------------------------------
 
-echo -e "\nMNINonLinear Completed"
+    atlasSpaceFolder="MNILinear"
+    atlasSpaceFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${atlasSpaceFolder}
+    log_Msg "atlasSpaceFolder: $atlasSpaceFolder"
+    if [ ! -e ${atlasSpaceFolder}/xfms ] ; then
+        log_Msg "mkdir -p ${atlasSpaceFolder}/xfms/"
+        mkdir -p ${atlasSpaceFolder}/xfms/
+    fi
+
+    echo -e "\n...Performing Atlas Registration to MNI152 (FLIRT)"
+    ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRT.sh \
+        --workingDir=${atlasSpaceFolder} \
+        --t1=${t1wFolder}/${t1wImage}_acpc \
+        --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
+        --ref=${t1wTemplate} \
+        --refBrain=${t1wTemplateBrain} \
+        --refMask=${templateMask} \
+        --oMat=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
+        --oInvMat=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
+        --oT1=${atlasSpaceFolder}/${t1wImage} \
+        --oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain
+
+    echo -e "\nLinear RPP Completed"
+else
+
+    # ------------------------------------------------------------------------------
+    #  Atlas Registration to MNI152: FLIRT + FNIRT
+    # ------------------------------------------------------------------------------
+
+    atlasSpaceFolder="MNINonLinear"
+    atlasSpaceFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${atlasSpaceFolder}
+    log_Msg "atlasSpaceFolder: $atlasSpaceFolder"
+    if [ ! -e ${atlasSpaceFolder}/xfms ] ; then
+        log_Msg "mkdir -p ${atlasSpaceFolder}/xfms/"
+        mkdir -p ${atlasSpaceFolder}/xfms/
+    fi
+
+    echo -e "\n...Performing Atlas Registration to MNI152 (FLIRT and FNIRT)"
+    ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRTandFNIRT.sh \
+        --workingDir=${atlasSpaceFolder} \
+        --t1=${t1wFolder}/${t1wImage}_acpc \
+        --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
+        --ref=${t1wTemplate} \
+        --refBrain=${t1wTemplateBrain} \
+        --refMask=${templateMask} \
+        --ref2mm=${t1wTemplate2mm} \
+        --ref2mmMask=${template2mmMask} \
+        --oWarp=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
+        --oInvWarp=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
+        --oT1=${atlasSpaceFolder}/${t1wImage} \
+        --oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain \
+        --FNIRTConfig=${FNIRTConfig}
+
+    echo -e "\nNonlinear RPP Completed"
+ fi
+
+
+

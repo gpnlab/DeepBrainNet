@@ -3,7 +3,6 @@
 #URL_LIFESPANCN="https://pitt.box.com/shared/static/8uwfzmrztqia23o9k2tswzmyc8sutcj7.gz"
 URL_ADNI="https://pitt.box.com/shared/static/9u5ztg9zku9etz8glwbdhw581l0plflh.gz"
 URL_MODELS="https://pitt.box.com/shared/static/vufjnf7qbyk0mn15s5rwndn327vea25b.gz"
-URL_DBN_MODEL="https://pitt.box.com/shared/static/jwmwhr53nms1m4049i9q6ugawccx4hjn.gz"
 
 STUDY?=ADNI
 DATA_RAW?=data/raw/$(STUDY)
@@ -17,7 +16,7 @@ SUBJECTS_BASENAME:=$(notdir $(SUBJECTS_BASENAME))
 B0?=3T
 MODEL?=models/DBN_model.h5
 
-DATA_PROCESSED=data/processed/$(STUDY)/$(PIPELINE)/$(SUBJECTS_BASENAME)
+DATA_PROCESSED=data/processed/$(STUDY)/$(PIPELINE)
 BRAIN_AGES = $(DATA_PROCESSED)/brain_ages.txt
 
 ifeq ($(STUDY), ADNI)
@@ -41,6 +40,7 @@ all: $(BRAIN_AGES)
 clean:
 	rm -rf $(DATA_PREPROCESSED)
 	rm -rf $(DATA_PROCESSED)
+	rm -rf logs/$(STUDY)/$(PIPELINE)
 
 ### GENERAL PIPELINE ###
 # Rule for dowloading raw data
@@ -52,16 +52,16 @@ $(SUBJECTS): $(DATA_RAW)
 
 # Rule for preprocessing raw data
 $(DATA_PREPROCESSED): $(DATA_RAW)
-	bash $(PREPROCESSING_SCRIPT) --studyFolder=$(DATA_RAW) --subjects=$(SUBJECTS) --b0=$(B0) --runLocal
+	bash $(PREPROCESSING_SCRIPT) --studyFolder=$(DATA_RAW) --subjects=$(SUBJECTS) --b0=$(B0) --runLocal --linear
 
 $(SUBJECTS_PREPROCESSED): $(DATA_PREPROCESSED)
-	python src/data/create_subjects_list.py $(DATA_RAW) $@
+	python src/data/create_subjects_list.py $(DATA_PREPROCESSED) $@
 
 # Rule for dowloading models
 # Change to add specific links to specific models online
 $(MODEL):
-	bash src/models/download_models.sh  $(URL_MODEL) models
+	bash src/models/models.sh  $(URL_MODEL) models
 
 # Rule for predicting brain ages
 $(BRAIN_AGES): $(DATA_PREPROCESSED) $(SUBJECTS_PREPROCESSED) $(MODEL)
-	bash src/app/prediction.sh --data=$(DATA_PREPROCESSED) --filename=$@ --model=$(MODEL) --b0=$(B0) --out=$(DATA_PROCESSED)
+	bash src/app/prediction.sh --data=$(DATA_PREPROCESSED) --filename=$@ --model=$(MODEL) --b0=$(B0) --out=$(DATA_PROCESSED) --linear=yes

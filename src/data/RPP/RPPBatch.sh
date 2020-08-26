@@ -3,7 +3,7 @@
 # # RPPBatch.sh
 #
 # ## Description:
-# Example script for running the preprocessing phase (registration-based skull-stripping and affine registration).
+# Batch script for running the Registtration-based Preprocessing Pipeline.
 #
 # ## Prerequisites
 #
@@ -55,6 +55,7 @@ get_batch_options() {
 	unset command_line_specified_b0
 	unset command_line_specified_run_local
 	unset command_line_specified_debug_mode
+	unset command_line_specified_linear_mode
 
 	local index=0
 	local numArgs=${#arguments[@]}
@@ -84,6 +85,10 @@ get_batch_options() {
 				command_line_specified_debug_mode="TRUE"
 				index=$(( index + 1 ))
 				;;
+			--linear)
+				command_line_specified_linear_mode="TRUE"
+				index=$(( index + 1 ))
+				;;
 			*)
 				echo ""
 				echo "ERROR: Unrecognized Option: ${argument}"
@@ -105,11 +110,15 @@ main()
 
 	# Set variable values that locate and specify data to process
 
+	# Set up pipeline environment variables and software
+    # Get absolute path of setUpRPP.sh
+    setup=$( cd "$(dirname "$0")" ; pwd )
+    . "${setup}/setUpRPP.sh"
+	#. "${PWD}/setUpRPP.sh"
     # Get the root directory; PWD points to ./src/data/RPP
-    #DBNDIR=get_parendir(get_parendir(get_parendir($(pwd))))
-    DBNDIR="${HOME}/proj/DBN"
+    #DBNDIR="${HOME}/proj/DBN"
     # Get the RPP directory
-    RPPDIR="${DBNDIR}/src/data/RPP"
+    #RPPDIR="${DBNDIR}/src/data/RPP"
 
     # Location of subject folders (named by subjectID)
     studyFolder="${DBNDIR}/data/raw/ADNI"
@@ -120,7 +129,7 @@ main()
     # Magnitude of the magnetic field used
     b0="3T"
     # Pipeline environment script
-	environmentScript="${RPPDIR}/setUpRPP.sh"
+	# environmentScript="${RPPDIR}/setUpRPP.sh"
 
 	# Use any command line specified options to override any of the variables above
 	if [ -n "${command_line_specified_study_folder}" ]; then
@@ -133,6 +142,14 @@ main()
 
 	if [ -n "${command_line_specified_b0}" ]; then
 		b0="${command_line_specified_b0}"
+	fi
+
+	if [ -n "${command_line_linear_mode}" ]; then
+        echo -e "\nRunning Mode: NonLinear Registration to MNI"
+		linear="no"
+    else
+        echo -e "\nRunning Mode: Linear Registration to MNI"
+		linear="yes"
 	fi
 
 	# If PRINTCOM is not a null or empty string variable, then this script and
@@ -168,8 +185,6 @@ main()
 	echo "b0: ${b0}"
 	echo "Run locally: ${command_line_specified_run_local}"
 
-	# Set up pipeline environment variables and software
-	source ${environmentScript}
 
 	# Define processing queue to be used if submitted to job scheduler
 	QUEUE="-q long.q"
@@ -241,7 +256,7 @@ main()
 		fi
 
         # Create log folder
-        logDir="${DBNDIR}/logs/RPP/${studyFolderBasename}/${subject}/${b0}"
+        logDir="${DBNDIR}/logs/${studyFolderBasename}/RPP/${subject}/${b0}"
         mkdir -p $logDir
 
 		# Run (or submit to be run) the RPP.sh script
@@ -258,11 +273,12 @@ main()
 			--templateMask="$TemplateMask" \
 			--template2mmMask="$Template2mmMask" \
 			--brainSize="$BrainSize" \
+            --linear="$linear" \
 			--FNIRTConfig="$FNIRTConfig" \
 			--printcom=$PRINTCOM \
-            &> $logDir/MNINonLinear.txt
+            &> "$logDir"/"$subject".txt
 
-	done
+    done
 }
 
 # Invoke the main function to get things started
