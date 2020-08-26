@@ -3,7 +3,7 @@
 # # RPPBatch.sh
 #
 # ## Description:
-# Example script for running the preprocessing phase (registration-based skull-stripping and affine registration).
+# Batch script for running the Registtration-based Preprocessing Pipeline.
 #
 # ## Prerequisites
 #
@@ -55,6 +55,7 @@ get_batch_options() {
 	unset command_line_specified_b0
 	unset command_line_specified_run_local
 	unset command_line_specified_debug_mode
+	unset command_line_specified_linear_mode
 
 	local index=0
 	local numArgs=${#arguments[@]}
@@ -82,6 +83,10 @@ get_batch_options() {
 				;;
 			--debugMode)
 				command_line_specified_debug_mode="TRUE"
+				index=$(( index + 1 ))
+				;;
+			--linear)
+				command_line_specified_linear_mode="TRUE"
 				index=$(( index + 1 ))
 				;;
 			*)
@@ -137,6 +142,14 @@ main()
 
 	if [ -n "${command_line_specified_b0}" ]; then
 		b0="${command_line_specified_b0}"
+	fi
+
+	if [ -n "${command_line_linear_mode}" ]; then
+        echo -e "\nRunning Mode: NonLinear Registration to MNI"
+		linear="no"
+    else
+        echo -e "\nRunning Mode: Linear Registration to MNI"
+		linear="yes"
 	fi
 
 	# If PRINTCOM is not a null or empty string variable, then this script and
@@ -260,11 +273,12 @@ main()
 			--templateMask="$TemplateMask" \
 			--template2mmMask="$Template2mmMask" \
 			--brainSize="$BrainSize" \
+            --linear="$linear" \
 			--FNIRTConfig="$FNIRTConfig" \
 			--printcom=$PRINTCOM \
             &> "$logDir"/"$subject".txt
 
-	done
+    done
 }
 
 # Invoke the main function to get things started

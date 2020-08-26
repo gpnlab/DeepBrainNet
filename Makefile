@@ -52,7 +52,7 @@ $(SUBJECTS): $(DATA_RAW)
 
 # Rule for preprocessing raw data
 $(DATA_PREPROCESSED): $(DATA_RAW)
-	bash $(PREPROCESSING_SCRIPT) --studyFolder=$(DATA_RAW) --subjects=$(SUBJECTS) --b0=$(B0) --runLocal
+	bash $(PREPROCESSING_SCRIPT) --studyFolder=$(DATA_RAW) --subjects=$(SUBJECTS) --b0=$(B0) --runLocal --linear
 
 $(SUBJECTS_PREPROCESSED): $(DATA_PREPROCESSED)
 	python src/data/create_subjects_list.py $(DATA_PREPROCESSED) $@
@@ -64,4 +64,4 @@ $(MODEL):
 
 # Rule for predicting brain ages
 $(BRAIN_AGES): $(DATA_PREPROCESSED) $(SUBJECTS_PREPROCESSED) $(MODEL)
-	bash src/app/prediction.sh --data=$(DATA_PREPROCESSED) --filename=$@ --model=$(MODEL) --b0=$(B0) --out=$(DATA_PROCESSED)
+	bash src/app/prediction.sh --data=$(DATA_PREPROCESSED) --filename=$@ --model=$(MODEL) --b0=$(B0) --out=$(DATA_PROCESSED) --linear=yes

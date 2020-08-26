@@ -43,7 +43,7 @@
 # at ${studyFolder}/${subject}.  The main output directories are:
 #
 # * The t1wFolder: ${DBNDir}/data/interim/${studyFolder}/${subject}/{b0}/t1w
-# * The atlasSpaceFolder: ${studyFolder}/${subject}/${b0}/MNINonLinear
+# * The atlasSpaceFolder: ${studyFolder}/${subject}/${b0}/MNI(Non)Linear
 #
 # All outputs are generated in directories at or below these two main
 # output directories.  The full list of output directories is:
@@ -156,6 +156,7 @@ Usage: RPP.sh [options]
   --templateMask=<file path>        Brain mask MNI Template
   --template2mmMask=<file path>     Brain mask MNI 2mm Template
   --brainSize=<size value>          Brain size estimate in mm, 150 for humans
+  --linear=<yes/no>                 Do (not) use FNIRT for image registration to MNI
   --FNIRTConfig=<file path>         FNIRT 2mm T1w Configuration file
 
 EOF
@@ -192,8 +193,8 @@ t1wTemplate2mm=`opts_GetOpt1 "--t1Template2mm" $@`
 templateMask=`opts_GetOpt1 "--templateMask" $@`
 template2mmMask=`opts_GetOpt1 "--template2mmMask" $@`
 brainSize=`opts_GetOpt1 "--brainSize" $@`
+linear=`opts_GetOpt1 "--linear" $@`
 FNIRTConfig=`opts_GetOpt1 "--FNIRTConfig" $@`
-
 # Use --printcom=echo for just printing everything and not actually
 # running the commands (the default is to actually run the commands)
 RUN=`opts_GetOpt1 "--printcom" $@`
@@ -227,14 +228,11 @@ log_Msg "RPPDIR: ${RPPDIR}"
 # Naming Conventions
 t1wImage="T1w"
 t1wFolder="T1w" #Location of T1w images
-atlasSpaceFolder="MNINonLinear"
 
 # Build Paths
 t1wFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${t1wFolder}
-atlasSpaceFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${atlasSpaceFolder}
 
 log_Msg "t1wFolder: $t1wFolder"
-log_Msg "atlasSpaceFolder: $atlasSpaceFolder"
 
 # Unpack List of Images
 t1wInputImages=`echo ${t1wInputImages} | sed 's/@/ /g'`
@@ -242,11 +240,6 @@ t1wInputImages=`echo ${t1wInputImages} | sed 's/@/ /g'`
 if [ ! -e ${t1wFolder}/xfms ] ; then
 	log_Msg "mkdir -p ${t1wFolder}/xfms/"
 	mkdir -p ${t1wFolder}/xfms/
-fi
-
-if [ ! -e ${atlasSpaceFolder}/xfms ] ; then
-	log_Msg "mkdir -p ${atlasSpaceFolder}/xfms/"
-	mkdir -p ${atlasSpaceFolder}/xfms/
 fi
 
 # ------------------------------------------------------------------------------
@@ -357,27 +350,71 @@ ${RUN} ${RPP_Scripts}/OneStepResampledACPC.sh \
 	--oT1Brain=${t1wFolder}/${t1wImage}_acpc_brain
 
 # ------------------------------------------------------------------------------
-#  Atlas Registration to MNI152: FLIRT + FNIRT
+#  Atlas Registration to MNI152
 #  Also applies the MNI registration to T1w image
-#  (although, these will be overwritten, and the final versions generated via
-#  a one-step resampling equivalent in PostFreeSurfer/CreateMyelinMaps.sh;
-#  so, the primary purpose of the following is to generate the Atlas Registration itself).
+#  Performs either FLIRT or FLIRT + FNIRT depending on the value of $linear
 # ------------------------------------------------------------------------------
 
-echo -e "\n...Performing Atlas Registration to MNI152 (FLIRT and FNIRT)"
-${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRTandFNIRT.sh \
-	--workingDir=${atlasSpaceFolder} \
-	--t1=${t1wFolder}/${t1wImage}_acpc \
-	--t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
-	--ref=${t1wTemplate} \
-	--refBrain=${t1wTemplateBrain} \
-	--refMask=${templateMask} \
-	--ref2mm=${t1wTemplate2mm} \
-	--ref2mmMask=${template2mmMask} \
-	--oWarp=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
-	--oInvWarp=${atlasSpaceFolder}/xfms/standard2acpc_dc.nii.gz \
-	--oT1=${atlasSpaceFolder}/${t1wImage} \
-	--oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain \
-	--FNIRTConfig=${FNIRTConfig}
+if [ $linear = yes ] ; then
 
-echo -e "\nRPP Completed"
+    # ------------------------------------------------------------------------------
+    #  Atlas Registration to MNI152: FLIRT
+    # ------------------------------------------------------------------------------
+
+    atlasSpaceFolder="MNILinear"
+    atlasSpaceFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${atlasSpaceFolder}
+    log_Msg "atlasSpaceFolder: $atlasSpaceFolder"
+    if [ ! -e ${atlasSpaceFolder}/xfms ] ; then
+        log_Msg "mkdir -p ${atlasSpaceFolder}/xfms/"
+        mkdir -p ${atlasSpaceFolder}/xfms/
+    fi
+
+    echo -e "\n...Performing Atlas Registration to MNI152 (FLIRT)"
+    ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRT.sh \
+        --workingDir=${atlasSpaceFolder} \
+        --t1=${t1wFolder}/${t1wImage}_acpc \
+        --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
+        --ref=${t1wTemplate} \
+        --refBrain=${t1wTemplateBrain} \
+        --refMask=${templateMask} \
+        --oMat=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
+        --oInvMat=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
+        --oT1=${atlasSpaceFolder}/${t1wImage} \
+        --oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain
+
+    echo -e "\nLinear RPP Completed"
+else
+
+    # ------------------------------------------------------------------------------
+    #  Atlas Registration to MNI152: FLIRT + FNIRT
+    # ------------------------------------------------------------------------------
+
+    atlasSpaceFolder="MNINonLinear"
+    atlasSpaceFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${atlasSpaceFolder}
+    log_Msg "atlasSpaceFolder: $atlasSpaceFolder"
+    if [ ! -e ${atlasSpaceFolder}/xfms ] ; then
+        log_Msg "mkdir -p ${atlasSpaceFolder}/xfms/"
+        mkdir -p ${atlasSpaceFolder}/xfms/
+    fi
+
+    echo -e "\n...Performing Atlas Registration to MNI152 (FLIRT and FNIRT)"
+    ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRTandFNIRT.sh \
+        --workingDir=${atlasSpaceFolder} \
+        --t1=${t1wFolder}/${t1wImage}_acpc \
+        --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
+        --ref=${t1wTemplate} \
+        --refBrain=${t1wTemplateBrain} \
+        --refMask=${templateMask} \
+        --ref2mm=${t1wTemplate2mm} \
+        --ref2mmMask=${template2mmMask} \
+        --oWarp=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
+        --oInvWarp=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
+        --oT1=${atlasSpaceFolder}/${t1wImage} \
+        --oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain \
+        --FNIRTConfig=${FNIRTConfig}
+
+    echo -e "\nNonlinear RPP Completed"
+ fi
+
+
+
