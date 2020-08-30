@@ -50,21 +50,24 @@ function usage() {
 }
 
 get_subjList() {
-    # If a file with the subject ID was passed
+    file_or_list=$1
     subjList=""
-    if [ -f "${1}" ] ; then
+    # If a file with the subject ID was passed
+    if [ -f "$file_or_list" ] ; then
+        echo "here"
         while IFS= read -r line || [[ -n "$line" ]]; do
             subjList="$subjList $line"
-        done < "$1"
+        done < "$file_or_list"
     # Instead a list was passed
     else
-        subjList="$1"
+        subjList="$file_or_list"
     fi
 
     # Sort subject list
     IFS=$'\n' # only word-split on '\n'
     subjList=( $( printf "%s\n" ${subjList[@]} | sort -n) ) # sort
     IFS=$' \t\n' # restore the default
+    unset file_or_list
 }
 
 function main() {
@@ -95,7 +98,6 @@ function main() {
 	# Report major script control variables to user
     echo -e "\nMajor script control variables\n"
 	echo "studyFolder: ${studyFolder}"
-
     get_subjList $subjects
 	echo "subjList: ${subjList}"
 	echo "environmentScript: ${setup}/setUpRPP.sh"
@@ -103,11 +105,6 @@ function main() {
 	echo "runLocal: ${runLocal}"
 	echo "linear: ${linear}"
 	echo "debugMode: ${PRINTCOM}"
-
-
-	# Define processing queue to be used if submitted to job scheduler
-	QUEUE="-q long.q"
-
 
     ###############################################################################
 	# Inputs:
@@ -165,37 +162,56 @@ function main() {
 		# FNIRT 2mm T1w Config
 		FNIRTConfig="${RPP_Config}/T1_2_MNI152_2mm.cnf"
 
-		# Establish queuing command based on command line option
-		if [ $runLocal = yes ] ; then
-			echo -e "\nAbout to run ${RPPDIR}/RPP.sh\n"
-			queuing_command=""
-		else
-			echo -e "\nAbout to use fsl_sub to queue to run ${RPPDIR}/RPP.sh\n"
-			queuing_command="${FSLDIR}/bin/fsl_sub ${QUEUE}"
-		fi
-
         # Create log folder
         logDir="${DBNDIR}/logs/${studyFolderBasename}/RPP/${subject}/${b0}"
         mkdir -p $logDir
 
-		# Run (or submit to be run) the RPP.sh script
-		# with all the specified parameter values
+		# Establish queuing command based on command line option
+		if [ $runLocal = yes ] ; then
+			echo -e "\nAbout to run ${RPPDIR}/RPP.sh\n"
+			queuing_command="nohup"
 
-		${queuing_command} "${RPPDIR}/RPP.sh" \
-			--studyFolder="$studyFolderBasename" \
-			--subject="$subject" \
-			--b0="$b0" \
-			--t1="$T1wInputImages" \
-			--t1Template="$T1wTemplate" \
-			--t1TemplateBrain="$T1wTemplateBrain" \
-			--t1Template2mm="$T1wTemplate2mm" \
-			--templateMask="$TemplateMask" \
-			--template2mmMask="$Template2mmMask" \
-			--brainSize="$BrainSize" \
-            --linear="$linear" \
-			--FNIRTConfig="$FNIRTConfig" \
-			--printcom=$PRINTCOM \
-            &> "$logDir"/"$subject".txt
+            # Run (or submit to be run) the RPP.sh script
+            # with all the specified parameter values
+            ${queuing_command} "${RPPDIR}/RPP.sh" \
+                --studyFolder="$studyFolderBasename" \
+                --subject="$subject" \
+                --b0="$b0" \
+                --t1="$T1wInputImages" \
+                --t1Template="$T1wTemplate" \
+                --t1TemplateBrain="$T1wTemplateBrain" \
+                --t1Template2mm="$T1wTemplate2mm" \
+                --templateMask="$TemplateMask" \
+                --template2mmMask="$Template2mmMask" \
+                --brainSize="$BrainSize" \
+                --linear="$linear" \
+                --FNIRTConfig="$FNIRTConfig" \
+                --printcom=$PRINTCOM \
+                &> "$logDir"/"$subject".txt
+		else
+			echo -e "\nAbout to use sbatch to run ${RPPDIR}/RPP.sh\n"
+            QUEUE="--partition=workstation"
+			queuing_command="sbatch --requeue --export=ALL --job-name=RPP_${subject} --mail-user=eduardojdiniz@gmail.com --mail-type=FAIL,END --ntasks-per-node=1 --mem=4gb --output=${logDir}/${subject}.txt --error=${logDir}/${subject}.txt ${QUEUE}"
+
+            # Run (or submit to be run) the RPP.sh script
+            # with all the specified parameter values
+            ${queuing_command} "${RPPDIR}/RPP.sh" \
+                --studyFolder="$studyFolderBasename" \
+                --subject="$subject" \
+                --b0="$b0" \
+                --t1="$T1wInputImages" \
+                --t1Template="$T1wTemplate" \
+                --t1TemplateBrain="$T1wTemplateBrain" \
+                --t1Template2mm="$T1wTemplate2mm" \
+                --templateMask="$TemplateMask" \
+                --template2mmMask="$Template2mmMask" \
+                --brainSize="$BrainSize" \
+                --linear="$linear" \
+                --FNIRTConfig="$FNIRTConfig" \
+                --printcom=$PRINTCOM
+		fi
+
+
 
     done
 }
