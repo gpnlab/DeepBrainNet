@@ -85,13 +85,6 @@ function main() {
 
     # Processing code goes here
 
-	# Set up pipeline environment variables and software
-
-    # Pipeline environment script
-    # Get absolute path of setUpRPP.sh
-    setup=$( cd "$(dirname "$0")" ; pwd )
-    . "${setup}/setUpRPP.sh"
-
     # Location of subject folders (named by subjectID)
     studyFolderBasename=`basename $studyFolder`;
 
@@ -187,7 +180,8 @@ function main() {
                 --linear="$linear" \
                 --FNIRTConfig="$FNIRTConfig" \
                 --printcom=$PRINTCOM \
-                &> "$logDir"/"$subject".txt
+                1> "$logDir"/"$subject".out \
+                2> "$logDir"/"$subject".err
 		else
 			echo -e "\nAbout to use sbatch to run ${RPPDIR}/RPP.sh\n"
             QUEUE="--partition=workstation"
