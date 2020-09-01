@@ -31,10 +31,20 @@ get_subjList() {
 usage() {
     # header text
     echo "
-        $log_ToolName: Batch script for running RPPBatch on Slurm
+        $log_ToolName: Submitting script for running RPP on Slurm managed computing clusters
 
-        Usage: $log_ToolName --studyFolder=<path to the folder with subject images>
-                             --subjects=<file or list of subject IDs>
+        Usage: $log_ToolName [--job-name=<name for job allocation>] default=ADNI_LinearRPP
+                             [--partition=<request a specific partition>] default=workstation
+                             [--exclude=<node(s) to be excluded>] default=""
+                             [--nodelist=<request a specific list of hosts>] default=""
+                             [--ntasks=<maximum number of tasks>] default=1
+                             [--cpus-per-task=<required cpus number of processors per task>] default=1
+                             [--mem-per-cpu=<minimum allocated memory per cpu>] default=2gb
+                             [--export=<export environment variables>] default=ALL
+                             [--mail-type=<type of mail>] default=FAIL,END
+                             [--mail-user=<user email>] default=eduardojdiniz@gmail.com
+                             --studyFolder=<path to folder holding the raw data folder> It assumes data is stored in raw folder e.g. /mnt/storinator/edd32/data/ADNI>
+                             --subjects=<file or list of subject IDs> e.g. /mnt/storinator/edd32/data/ADNI/raw/ID_list.txt
                              [--b0=<scanner magnetic field intensity] default=3T
                              [--linear=<select (non)linear registered image>] default=yes
                              [--debugMode=<do(non) perform a dry run>] default=yes
@@ -64,7 +74,7 @@ input_parser() {
     opts_AddMandatory '--studyFolder' 'studyFolder' 'raw data folder path' "a required value; is the path to the study folder holding the raw data. Don't forget the study name (e.g. /home/edd32/data/raw/ADNI)"
     opts_AddMandatory '--subjects' 'subjects' 'path to file with subject IDs' "an required value; path to a file with the IDs of the subject to be processed (e.g. /home/edd32/data/raw/ADNI/subjects.txt)" "--subject" "--subjectList" "--subjList"
     opts_AddOptional  '--b0' 'b0' 'magnetic field intensity' "an optional value; the scanner magnetic field intensity, e.g., 1.5T, 3T, 7T" "3T"
-    opts_AddOptional  '--li)ear'  'linear' '(non)linear registration to MNI' "an optional value; if it is set then only an affine registration to MNI is performed, otherwise, a nonlinear registration to MNI is performed" "yes"
+    opts_AddOptional  '--linear'  'linear' '(non)linear registration to MNI' "an optional value; if it is set then only an affine registration to MNI is performed, otherwise, a nonlinear registration to MNI is performed" "yes"
     opts_AddOptional  '--debugMode' 'PRINTCOM' 'do (not) perform a dray run' "an optional value; If PRINTCOM is not a null or empty string variable, then this script and other scripts that it calls will simply print out the primary commands it otherwise would run. This printing will be done using the command specified in the PRINTCOM variable, e.g., echo" "" "--PRINTCOM" "--printcom"
 
     opts_ParseArguments "$@"
@@ -108,7 +118,7 @@ input_parser() {
 
 
     # logs have been saved on data dir by now, remove then
-    #rm -rf $slurmLogDir
+    rm -rf $slurmLogDir
 }
 
 input_parser "$@"

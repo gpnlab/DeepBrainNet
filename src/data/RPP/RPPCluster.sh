@@ -35,7 +35,7 @@ echo ' '
 usage() {
     # header text
     echo "
-        $log_ToolName: Batch script for running RPPBatch on Slurm
+        $log_ToolName: Queueing script for running RPP on Slurm-based computing clusters
 
         Usage: $log_ToolName --studyFolder=<path to the folder with subject images>
                              --subjects=<file or list of subject IDs>

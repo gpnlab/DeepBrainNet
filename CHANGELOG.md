@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2020-09-01
+### Added
+- .cvsignore files and folders to be ignored by rsync
+- src/data/RPP/RPPCluster.sh slurm submitting script
+- src/data/RPP/runRPPCluster.sh slurm queueing script
+
+### Changed
+- src/data/RPP/RPP.sh save byproducts and results in a temporary folder
+- src/data/RPP/RPPBatch.sh changed input parser to newer version
+
+### Removed
+
+### Fixed
+- Makefile name of subjects file and input string of preprocessing script
+
 ## [1.1.0] - 2020-08-26
 ### Added
 - src/data/RPP/scripts/AnatomicalAverage_old.sh for backwards compability
@@ -68,18 +83,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - src/models/download_models.sh downloads models from box
 - docs folder
 - example folder that contains a small, standalone version
+
 ### Changed
 - README.md explains how to create virtual environment, run the pipeline and example version. It also specifies the data requirements and show the results for each model for the two sample T1 nifti files
 - environment.yml with complete dependencies specification
 - CHANGELOG.md reflects version 0.0.1
 - .gitignore now ignores example/data and example/models folders
 - Makefile with the pipeline from download of data and models to prediciton. Also includes the pipeline for the example
+
 ### Removed
 - Deleted reports folder; new format is results and docs folders
 
 ### Fixed
 
-[Unreleased]:https://github.com/gpnlab/DeepBrainNet/compare/v1.1.0...HEAD
+[Unreleased]:https://github.com/gpnlab/DeepBrainNet/compare/v1.2.0...HEAD
+[1.2.0]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v1.2.0
 [1.1.0]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v1.1.0
 [1.0.0]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v1.0.0
 [0.0.1]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v0.0.1

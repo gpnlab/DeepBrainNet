@@ -26,6 +26,10 @@ $ conda deactivate
 - For example, if using data from the ADNI dataset and running the RPP (Registration-based Processing Pipeline), pipeline provided in this package, the preprocessed data will be stored in `data/preprocessed/ADNI/RPP`.
 
 ## RPP
+As of version 1.0.0 the RPP is available.
+
+As of version 1.1.0 it is also possible to perform RPP with linear registration, isntead of nonlinear registration. This is now the default behavior since it conforms with the origional tranning dataset. to change this behavior see the help on function `src/data/RPP/RPP.sh`. Basically, you just need to pass the flag `--linear=no` to `RPP.sh`
+
 The primary purposes of the RPP are:
 
 1. To average any image repeats (i.e. multiple T1w images available)
@@ -61,7 +65,9 @@ All outputs are generated within the tree rooted
 at `${studyFolder}/${subject}`.  The main output directories are:
 
 * The t1wFolder: `${DBNDir}/data/interim/${studyFolder}/${subject}/{b0}/t1w`
-* The atlasSpaceFolder: `${studyFolder}/${subject}/${b0}/MNINonLinear`
+* The atlasSpaceFolder: `${studyFolder}/${subject}/${b0}/MNINonLinear` or
+* The atlasSpaceFolder: `${studyFolder}/${subject}/${b0}/MNILinear`,
+if linear registration is to MNI space is performed
 
 All outputs are generated in directories at or below these two main
 output directories.  The full list of output directories is:
@@ -84,6 +90,9 @@ Also note that the following output directory is created:
 values: `--studyFolder / --subject / --b0 / --t1`
 
 Logs are saved in `logs/RPP`
+
+### Running RPP on a computer cluster
+As of version 1.2.0, it is possible to submit RPP jobs to a cluster. More information by seeing the help `src/data/RPP/runRPPCluster.sh --help`. There you can find all the flags you can submit to slurm-managed clusters (e.g. CRC). The submitting script can be found in `src/data/RPP/RPPCluster.sh`.
 
 <!-- References -->
 [FSL]: http://fsl.fmrib.ox.ac.uk
