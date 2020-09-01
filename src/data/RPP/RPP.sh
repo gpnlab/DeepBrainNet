@@ -230,7 +230,8 @@ t1wImage="T1w"
 t1wFolder="T1w" #Location of T1w images
 
 # Build Paths
-t1wFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${t1wFolder}
+#t1wFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${t1wFolder}
+t1wFolder=./tmp/${studyFolder}/preprocessed/RPP/${subject}/${b0}/${t1wFolder}
 
 log_Msg "t1wFolder: $t1wFolder"
 
@@ -362,7 +363,10 @@ if [ $linear = yes ] ; then
     # ------------------------------------------------------------------------------
 
     atlasSpaceFolder="MNILinear"
-    atlasSpaceFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${atlasSpaceFolder}
+    #atlasSpaceFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${atlasSpaceFolder}
+    #atlasSpaceFolder=${studyFolder}/preprocessed/RPP/${subject}/${b0}/${atlasSpaceFolder}
+    atlasSpaceFolder=./tmp/${studyFolder}/preprocessed/RPP/${subject}/${b0}/${atlasSpaceFolder}
+
     log_Msg "atlasSpaceFolder: $atlasSpaceFolder"
     if [ ! -e ${atlasSpaceFolder}/xfms ] ; then
         log_Msg "mkdir -p ${atlasSpaceFolder}/xfms/"
@@ -390,7 +394,9 @@ else
     # ------------------------------------------------------------------------------
 
     atlasSpaceFolder="MNINonLinear"
-    atlasSpaceFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${atlasSpaceFolder}
+    #atlasSpaceFolder=${DBNDIR}/data/preprocessed/${studyFolder}/RPP/${subject}/${b0}/${atlasSpaceFolder}
+    atlasSpaceFolder=./tmp/${studyFolder}/preprocessed/RPP/${subject}/${b0}/${atlasSpaceFolder}
+
     log_Msg "atlasSpaceFolder: $atlasSpaceFolder"
     if [ ! -e ${atlasSpaceFolder}/xfms ] ; then
         log_Msg "mkdir -p ${atlasSpaceFolder}/xfms/"
