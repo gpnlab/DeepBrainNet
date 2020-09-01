@@ -24,6 +24,8 @@
 
 set -eu
 
+RSYNC=/usr/bin/rsync
+
 setup=$( cd "$(dirname "$0")" ; pwd )
 . "${setup}/setUpRPP.sh"
 . "${DBN_Libraries}/newopts.shlib" "$@"
@@ -205,7 +207,11 @@ function main() {
                 --printcom=$PRINTCOM
 		fi
 
-
+        # Transfer the preprocessed data to the permanent directory
+        tmpDir="$(dirname "$0")"/tmp/${studyFolderBasename}/preprocessed/
+        $RSYNC -r $tmpDir ${DBNDIR}/data/preprocessed/${studyFolderBasename}
+        # Remove temporary directory
+        rm -rf ./tmp
 
     done
 }
