@@ -8,8 +8,8 @@ STUDY?=ADNI
 DATA_RAW?=data/raw/$(STUDY)
 PIPELINE?=RPP
 DATA_PREPROCESSED?=data/preprocessed/$(STUDY)/$(PIPELINE)
-SUBJECTS?=$(DATA_RAW)/subjects.txt
-SUBJECTS_PREPROCESSED?=$(DATA_PREPROCESSED)/subjects.txt
+SUBJECTS?=$(DATA_RAW)/ID_list.txt
+SUBJECTS_PREPROCESSED?=$(DATA_PREPROCESSED)/logged_ID_list.txt
 # Get filename without extension
 SUBJECTS_BASENAME=$(basename $(SUBJECTS))
 SUBJECTS_BASENAME:=$(notdir $(SUBJECTS_BASENAME))
@@ -52,7 +52,7 @@ $(SUBJECTS): $(DATA_RAW)
 
 # Rule for preprocessing raw data
 $(DATA_PREPROCESSED): $(DATA_RAW)
-	bash $(PREPROCESSING_SCRIPT) --studyFolder=$(DATA_RAW) --subjects=$(SUBJECTS) --b0=$(B0) --runLocal=yes --linear=yes
+	bash $(PREPROCESSING_SCRIPT) --studyFolder=$(DATA_RAW) --subjects=$(SUBJECTS) --b0=$(B0) --runLocal=no --linear=yes
 
 $(SUBJECTS_PREPROCESSED): $(DATA_PREPROCESSED)
 	python src/data/create_subjects_list.py $(DATA_PREPROCESSED) $@
