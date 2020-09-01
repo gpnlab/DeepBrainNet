@@ -5,7 +5,6 @@
 
 RSYNC=/usr/bin/rsync
 SSH=/usr/bin/ssh
-
 # The hostname from which sbatch was invoked (e.g. obelix)
 SERVER=$SLURM_SUBMIT_HOST
 # The name of the nome running the job script (e.g. cluster)
@@ -14,7 +13,7 @@ NODE=$SLURMD_NODENAME
 SERVERDIR=$SLURM_SUBMIT_DIR
 # The working directory in the node named after the ID of the job allocation
 #NODEDIR="/scratch/work/test/SLURM_$SLURM_JOB_ID"
-NODEDIR="/scratch/work/SLURM_$SLURM_JOB_ID"
+NODEDIR="/tmp/work/SLURM_$SLURM_JOB_ID"
 mkdir -p $NODEDIR
 cd $NODEDIR
 
