@@ -182,7 +182,7 @@ cleanup() {
 	#echo Final files in permanent data directory:
 	#$SSH $SERVER "cd data/preprocessed/$studyFolderBasename; ls -lah"
 
-    #rm -rf "$(dirname "$NODEDIR")"
+    rm -rf "$(dirname "$NODEDIR")"
 }
 
 early() {
