@@ -132,20 +132,33 @@ function main() {
 			i=$(($i+1))
 		done
 
+		# Detect Number of T2w Images and build list of full paths to T2w images
+		numT2ws=`ls ${studyFolder}/${subject}/${b0} | grep 'T2w_SPC.$' | wc -l`
+		echo "Found ${numT2ws} T2w Images for subject ${subject}"
+		T2wInputImages=""
+		i=1
+		while [ $i -le $numT2ws ] ; do
+            # An @ symbol separate the T2-weighted image's full paths
+			T2wInputImages=`echo "${T2wInputImages}${studyFolder}/${subject}/${b0}/T2w_SPC${i}/${subject}_${b0}_T2w_SPC${i}.nii.gz@"`
+			i=$(($i+1))
+		done
+
 		# Templates
 
 		# Hires T1w MNI template
 		T1wTemplate="${MNI_Templates}/MNI152_T1_0.7mm.nii.gz"
-
 		# Hires brain extracted MNI template
 		T1wTemplateBrain="${MNI_Templates}/MNI152_T1_0.7mm_brain.nii.gz"
-
 		# Lowres T1w MNI template
 		T1wTemplate2mm="${MNI_Templates}/MNI152_T1_2mm.nii.gz"
-
+		# Hires T2w MNI template
+		T2wTemplate="${MNI_Templates}/MNI152_T2_0.7mm.nii.gz"
+		# Hires brain extracted MNI template
+		T2wTemplateBrain="${MNI_Templates}/MNI152_T2_0.7mm_brain.nii.gz"
+		# Lowres T1w MNI template
+		T2wTemplate2mm="${MNI_Templates}/MNI152_T2_2mm.nii.gz"
 		# Hires MNI brain mask template
 		TemplateMask="${MNI_Templates}/MNI152_T1_0.7mm_brain_mask.nii.gz"
-
 		# Lowres MNI brain mask template
 		Template2mmMask="${MNI_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz"
 
@@ -153,7 +166,6 @@ function main() {
 
 		# BrainSize in mm, 150 for humans
 		BrainSize="150"
-
 		# FNIRT 2mm T1w Config
 		FNIRTConfig="${RPP_Config}/T1_2_MNI152_2mm.cnf"
 
@@ -173,9 +185,13 @@ function main() {
                 --subject="$subject" \
                 --b0="$b0" \
                 --t1="$T1wInputImages" \
+                --t2="$T2wInputImages" \
                 --t1Template="$T1wTemplate" \
                 --t1TemplateBrain="$T1wTemplateBrain" \
                 --t1Template2mm="$T1wTemplate2mm" \
+                --t2Template="$T2wTemplate" \
+                --t2TemplateBrain="$T2wTemplateBrain" \
+                --t2Template2mm="$T2wTemplate2mm" \
                 --templateMask="$TemplateMask" \
                 --template2mmMask="$Template2mmMask" \
                 --brainSize="$BrainSize" \
@@ -196,9 +212,13 @@ function main() {
                 --subject="$subject" \
                 --b0="$b0" \
                 --t1="$T1wInputImages" \
+                --t2="$T2wInputImages" \
                 --t1Template="$T1wTemplate" \
                 --t1TemplateBrain="$T1wTemplateBrain" \
                 --t1Template2mm="$T1wTemplate2mm" \
+                --t2Template="$T2wTemplate" \
+                --t2TemplateBrain="$T2wTemplateBrain" \
+                --t2Template2mm="$T2wTemplate2mm" \
                 --templateMask="$TemplateMask" \
                 --template2mmMask="$Template2mmMask" \
                 --brainSize="$BrainSize" \
@@ -211,16 +231,9 @@ function main() {
         tmpDir="$(dirname "$0")"/tmp/${studyFolderBasename}/preprocessed/
         $RSYNC -r $tmpDir ${DBNDIR}/data/preprocessed/${studyFolderBasename}
         # Remove temporary directory
-        rm -rf ./tmp
+        rm -r "$(dirname "$0")"/tmp
 
     done
 }
 
-if (($# == 0)) || [[ "$1" == --* ]] ; then
-    #named parameters
-    main "$@"
-else
-    #positional support goes here - just call main with named parameters built from $1, etc
-    log_Err_Abort "positional parameter support is not currently implemented"
-    main --studyFolder="$1" --subjects="$2" --b0="$3" --runLocal="$4" --linear="$5" --debugMode="$6"
-fi
+main "$@"

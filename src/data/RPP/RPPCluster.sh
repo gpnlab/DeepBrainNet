@@ -104,12 +104,19 @@ setup() {
     $SSH $NODE "mkdir -p $LOGDIR"
 
     # Templates
+
     # Hires T1w MNI template
     T1wTemplate="${MNI_Templates}/MNI152_T1_0.7mm.nii.gz"
     # Hires brain extracted MNI template
     T1wTemplateBrain="${MNI_Templates}/MNI152_T1_0.7mm_brain.nii.gz"
     # Lowres T1w MNI template
     T1wTemplate2mm="${MNI_Templates}/MNI152_T1_2mm.nii.gz"
+    # Hires T2w MNI template
+    T2wTemplate="${MNI_Templates}/MNI152_T2_0.7mm.nii.gz"
+    # Hires brain extracted MNI template
+    T2wTemplateBrain="${MNI_Templates}/MNI152_T2_0.7mm_brain.nii.gz"
+    # Lowres T1w MNI template
+    T2wTemplate2mm="${MNI_Templates}/MNI152_T2_2mm.nii.gz"
     # Hires MNI brain mask template
     TemplateMask="${MNI_Templates}/MNI152_T1_0.7mm_brain_mask.nii.gz"
     # Lowres MNI brain mask template
@@ -146,17 +153,33 @@ main() {
         T1wInputImages=`echo "${T1wInputImages}${SUBJECTDIR}/${b0}/T1w_MPR${i}/${SUBJECTID}_${b0}_T1w_MPR${i}.nii.gz@"`
         i=$(($i+1))
     done
+
+    # Detect Number of T2w Images and build list of full paths to T2w images
+    numT2ws=`ls ${SUBJECTID}/${b0} | grep 'T2w_SPC.$' | wc -l`
+    echo "Found ${numT2ws} T2w Images for subject ${SUBJECTID}"
+    T2wInputImages=""
+    i=1
+    while [ $i -le $numT2ws ] ; do
+        # An @ symbol separate the T2-weighted image's full paths
+        T2wInputImages=`echo "${T2wInputImages}${SUBJECTID}/${b0}/T2w_SPC${i}/${SUBJECTID}_${b0}_T2w_SPC${i}.nii.gz@"`
+        i=$(($i+1))
+    done
+
     cd $NODEDIR
 
     # Submit to be run the RPP.sh script with all the specified parameter values
     ./RPP/RPP.sh \
         --studyFolder="$studyFolderBasename" \
-        --subject="$SUBJECTID" \
+        --subject="$subject" \
         --b0="$b0" \
         --t1="$T1wInputImages" \
+        --t2="$T2wInputImages" \
         --t1Template="$T1wTemplate" \
         --t1TemplateBrain="$T1wTemplateBrain" \
         --t1Template2mm="$T1wTemplate2mm" \
+        --t2Template="$T2wTemplate" \
+        --t2TemplateBrain="$T2wTemplateBrain" \
+        --t2Template2mm="$T2wTemplate2mm" \
         --templateMask="$TemplateMask" \
         --template2mmMask="$Template2mmMask" \
         --brainSize="$BrainSize" \
@@ -182,7 +205,7 @@ cleanup() {
 	#echo Final files in permanent data directory:
 	#$SSH $SERVER "cd data/preprocessed/$studyFolderBasename; ls -lah"
 
-    rm -rf "$(dirname "$NODEDIR")"
+    rm -r "$(dirname "/tmp/work/$SLURM_JOB_ID")"
 }
 
 early() {

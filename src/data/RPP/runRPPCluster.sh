@@ -94,8 +94,7 @@ input_parser() {
     done
 
     # Make slurm logs directory
-    slurmLogDir="$(dirname "$0")"/logs/slurm
-    mkdir -p $slurmLogDir
+    mkdir -p "$(dirname "$0")"/logs/slurm
 
 	queuing_command="sbatch \
         --job-name=$jobName \
@@ -118,7 +117,7 @@ input_parser() {
 
 
     # logs have been saved on data dir by now, remove then
-    rm -rf $slurmLogDir
+    rm -r $"$(dirname "$0")"/logs/slurm
 }
 
 input_parser "$@"
