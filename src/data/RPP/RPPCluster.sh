@@ -3,7 +3,7 @@
 #SBATCH --error=./logs/slurm/slurm-%A_%a.err
 #SBATCH --output=./logs/slurm/slurm-%A_%a.out
 
-RSYNC=/usr/bin/rsync
+SCP=/usr/bin/scp
 SSH=/usr/bin/ssh
 # The hostname from which sbatch was invoked (e.g. obelix)
 SERVER=$SLURM_SUBMIT_HOST
@@ -12,8 +12,8 @@ NODE=$SLURMD_NODENAME
 # The directory from which sbatch was invoked (e.g. proj/DBN/src/data/RPP)
 SERVERDIR=$SLURM_SUBMIT_DIR
 # The working directory in the node named after the ID of the job allocation
-#NODEDIR="/scratch/work/test/SLURM_$SLURM_JOB_ID"
 NODEDIR="/tmp/work/SLURM_$SLURM_JOB_ID"
+#NODEDIR="$SLURM_SCRATCH/work/SLURM_$SLURM_JOB_ID"
 mkdir -p $NODEDIR
 cd $NODEDIR
 
@@ -53,6 +53,7 @@ usage() {
 
 input_parser() {
     # Load input parser functions
+    # Change this for ssh commands
     setup=$( cd "$SERVERDIR" ; pwd )
     cd $SERVERDIR
     . "${setup}/setUpRPP.sh"
@@ -83,8 +84,8 @@ setup() {
 
     echo Transferring files from server to compute node $NODE
     # Copy RPP scripts and DATA from server to node, creating whatever directories required
-    $RSYNC -r $SERVERDIR $NODE:$NODEDIR
-    $RSYNC -r $SUBJECTDIR $NODE:$NODEDIR
+    $SCP -r $SERVER:$SERVERDIR $NODE:$NODEDIR
+    $SCP -r $SERVER:$SUBJECTDIR $NODE:$NODEDIR
 
     #echo Files in node work directory are as follows:
     #$SSH $NODE "ls -lahR $NODEDIR"
@@ -169,8 +170,8 @@ main() {
 
     # Submit to be run the RPP.sh script with all the specified parameter values
     ./RPP/RPP.sh \
-        --studyFolder="$studyFolderBasename" \
-        --subject="$subject" \
+        --studyName="$studyFolderBasename" \
+        --subject="$SUBJECTID" \
         --b0="$b0" \
         --t1="$T1wInputImages" \
         --t2="$T2wInputImages" \
@@ -193,19 +194,15 @@ main() {
 cleanup() {
 	echo ' '
 	echo Transferring files from node to server
-	echo Writing files in permanent directory  $SERVERDIR
-	cd $NODEDIR
+	echo "Writing files in permanent directory ${studyFolder}/preprocessed/RPP/${SUBJECTID}"
 
-    $RSYNC -r ./logs ${SERVER}:${studyFolder}
+    $SCP -r ${NODE}:${NODEDIR}/logs ${SERVER}:${studyFolder}
     $SSH ${SERVER} "mkdir -p ${studyFolder}/preprocessed/RPP/${SUBJECTID}"
-    $RSYNC -r ./tmp/${studyFolderBasename}/preprocessed/RPP/${SUBJECTID}/${b0} ${SERVER}:${studyFolder}/preprocessed/RPP/${SUBJECTID}
-    cd $SERVERDIR
-    $RSYNC -r logs/slurm ${SERVER}:${studyFolder}/logs
+    $SCP -r ${NODE}:${NODEDIR}/tmp/${studyFolderBasename}/preprocessed/RPP/${SUBJECTID}/${b0} ${SERVER}:${studyFolder}/preprocessed/RPP/${SUBJECTID}
+    $SCP -r ${SERVER}:${SERVERDIR}/logs/slurm ${SERVER}:${studyFolder}/logs
 
-	#echo Final files in permanent data directory:
-	#$SSH $SERVER "cd data/preprocessed/$studyFolderBasename; ls -lah"
-
-    rm -r "$(dirname "/tmp/work/$SLURM_JOB_ID")"
+    echo Files transfered to permanent directory, clean temporary directory
+    rm -rf /tmp/work/SLURM_$SLURM_JOB_ID
 }
 
 early() {

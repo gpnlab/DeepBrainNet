@@ -88,8 +88,8 @@ OutputTransform=`opts_GetOpt1 "--oMat" $@`  # "$9"
 OutputInvTransform=`opts_GetOpt1 "--oInvMat" $@`  # "$10"
 OutputT1wImage=`opts_GetOpt1 "--oT1" $@`  # "$11"
 OutputT1wImageBrain=`opts_GetOpt1 "--oT1Brain" $@`  # "$12"
-OutputT2wImage=`opts_GetOpt1 "--oT1" $@`  # "$11"
-OutputT2wImageBrain=`opts_GetOpt1 "--oT1Brain" $@`  # "$12"
+OutputT2wImage=`opts_GetOpt1 "--oT2" $@`  # "$11"
+OutputT2wImageBrain=`opts_GetOpt1 "--oT2Brain" $@`  # "$12"
 
 # default parameters
 WD=`opts_DefaultOpt $WD .`
@@ -100,11 +100,6 @@ T1wBasename=`basename $T1wBasename`;
 #T1wBrainBasename=`${FSLDIR}/bin/remove_ext $T1wBrain`;
 T1wBrainBasename=`remove_ext $T1wBrain`;
 T1wBrainBasename=`basename $T1wBrainBasename`;
-
-T2wBasename=`remove_ext $T2w`;
-T2wBasename=`basename $T2wBasename`;
-T2wBrainBasename=`remove_ext $T2wBrain`;
-T2wBrainBasename=`basename $T2wBrainBasename`;
 
 log_Msg "START: Linear Atlas Registration to MNI152"
 
@@ -132,7 +127,7 @@ ${FSLDIR}/bin/flirt -in ${T1wBrain} -ref ${Reference} -out ${OutputT1wImageBrain
 ${FSLDIR}/bin/fslmaths ${OutputT1wImage} -mas ${OutputT1wImageBrain} ${OutputT1wImageBrain}
 
 # T2w set of warped outputs(brain/whole-head + orig)
-if [ ! "${T2w}" = "NONE" ] ; then
+if [ -n "${T2w}" ] ; then
     ${FSLDIR}/bin/flirt -in ${T2w} -ref ${Reference} -out ${OutputT2wImage} -init ${OutputTransform} -applyxfm
     ${FSLDIR}/bin/flirt -in ${T2wBrain} -ref ${Reference} -out ${OutputT2wImageBrain} -init ${OutputTransform} -applyxfm
     ${FSLDIR}/bin/fslmaths ${OutputT2wImage} -mas ${OutputT2wImageBrain} ${OutputT2wImageBrain}

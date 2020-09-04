@@ -128,7 +128,7 @@ show_usage() {
 					                Used with --subject input to create path to
 					                directory for all outputs generated as
                                     ./tmp/studyName/subject
---subject=<subject>                 Subject ID (required)
+  --subject=<subject>               Subject ID (required)
                                     Used with --studyName input to create path to
                                     directory for all outputs generated as
                                     ./tmp/studyName/subject
@@ -207,7 +207,7 @@ RUN=`opts_GetOpt1 "--printcom" $@`
 
 log_Msg "studyName: ${studyName}"
 log_Msg "subject: ${subject}"
-log_Msg "b0: ${subject}"
+log_Msg "b0: ${b0}"
 log_Msg "t1wInputImages: ${t1wInputImages}"
 log_Msg "t2wInputImages: ${t2wInputImages}"
 log_Msg "t1wTemplate: ${t1wTemplate}"
@@ -254,14 +254,14 @@ t1wInputImages=`echo ${t1wInputImages} | sed 's/@/ /g'`
 t2wInputImages=`echo ${t2wInputImages} | sed 's/@/ /g'`
 
 # Are T2w images available?
-if [ "${T2wInputImages}" = "NONE" ] ; then
+if [ -z "${t2wInputImages}" ] ; then
     t2wFolder_t2wImageWithPath_acpc="NONE"
     t2wFolder_t2wImageWithPath_acpc_brain="NONE"
-    t1wFolder_t2wImageWithPath_acpc_dc="NONE"
+    t1wFolder_t2wImageWithPath_acpc="NONE"
 else
     t2wFolder_t2wImageWithPath_acpc="${t2wFolder}/${t2wImage}_acpc"
     t2wFolder_t2wImageWithPath_acpc_brain="${t2wFolder}/${t2wImage}_acpc_brain"
-    t1wFolder_t2wImageWithPath_acpc_dc="${t1wFolder}/${t2wImage}_acpc_dc"
+    t1wFolder_t2wImageWithPath_acpc="${t1wFolder}/${t2wImage}_acpc"
 fi
 
 if [ ! -e ${t1wFolder}/xfms ] ; then
@@ -270,7 +270,7 @@ if [ ! -e ${t1wFolder}/xfms ] ; then
 fi
 
 #if [ ! -e ${t2wFolder}/xfms ] && [ ${t2wFolder} != "NONE" ] ; then
-if [ ! -e ${t2wFolder}/xfms ] && [ ${t2wInputImages} != "NONE" ] ; then
+if [ ! -e ${t2wFolder}/xfms ] && [ -n ${t2wInputImages} ] ; then
     log_Msg "mkdir -p ${t2wFolder}/xfms/"
     mkdir -p ${t2wFolder}/xfms/
 fi
@@ -290,30 +290,30 @@ fi
 Modalities="T1w T2w"
 
 for tXw in ${Modalities} ; do
-
     # Set up appropriate input variables
     if [ $tXw = T1w ] ; then
         tXwInputImages="${t1wInputImages}"
         tXwFolder="${t1wFolder}"
         tXwImage="${t1wImage}"
         tXwTemplate="${t1wTemplate}"
-        tXwTemplateMask="${t1wTemplateBrain}"
         tXwTemplate2mm="${t1wTemplate2mm}"
     else
         tXwInputImages="${t2wInputImages}"
         tXwFolder="${t2wFolder}"
         tXwImage="${t2wImage}"
         tXwTemplate="${t2wTemplate}"
-        tXwTemplateMask="${t2wTemplateBrain}"
         tXwTemplate2mm="${t2wTemplate2mm}"
     fi
     outputTXwImageString=""
 
     # Skip modality if no image
-    if [ "${tXwInputImages}" = "NONE" ] ; then
+    if [ -z "${tXwInputImages}" ] ; then
+        echo ''
         log_Msg "Skipping Modality: $tXw - image not specified"
+        echo ''
         continue
     else
+        echo ''
         log_Msg "Processing Modality: $tXw"
     fi
 
@@ -322,7 +322,7 @@ for tXw in ${Modalities} ; do
         # reorient image to mach the orientation of MNI152
         ${RUN} ${FSLDIR}/bin/fslreorient2std $image ${tXwFolder}/${tXwImage}${i}
         # always add the message/parameters specified
-        outputTXwImageString="${outputTXwImageString}${tXwFolder}/${tXwImage}${i} "
+        outputTXwImageString="${outputTXwImageString}${tXwFolder}/${tXwImage}${i}@"
         i=$(($i+1))
     done
 
@@ -376,25 +376,35 @@ for tXw in ${Modalities} ; do
         --workingDir=${tXwFolder}/BrainExtractionFNIRTbased \
         --in=${tXwFolder}/${tXwImage}_acpc \
         --ref=${tXwTemplate} \
-        --refMask=${tXwTemplateMask} \
+        --refMask=${templateMask} \
         --ref2mm=${tXwTemplate2mm} \
         --ref2mmMask=${template2mmMask} \
         --outBrain=${tXwFolder}/${tXwImage}_acpc_brain \
         --outBrainMask=${tXwFolder}/${tXwImage}_acpc_brain_mask \
         --FNIRTConfig=${FNIRTConfig}
 
-done  # End of looping over modalities (T1w and T2w)
+done
+# End of looping over modalities (T1w and T2w)
 
 # ------------------------------------------------------------------------------
 # T2w to T1w Registration
 # ------------------------------------------------------------------------------
 
-wdir=${T2wFolder}/t2wToT1wReg
-if [ -e ${wdir} ] ; then
-    # DO NOT change the following lie to "rm -r "{wdir}"" because the changes of
-    # something going wrong with that are much higher, and rm -r always needs to
-    # be treated with the utmost caution
-    rm -r ${T2wFolder}/t2wToT1wReg
+
+if [ -z "${t2wInputImages}" ] ; then
+
+    echo -e "\n...Performing T2w to T1w Registration"
+    log_Msg "Skipping T2w to T1w registration --- no T2w image."
+
+else
+
+    wdir=${t2wFolder}/t2wToT1wReg
+    if [ -e ${wdir} ] ; then
+        # DO NOT change the following lie to "rm -r "{wdir}"" because the changes of
+        # something going wrong with that are much higher, and rm -r always needs to
+        # be treated with the utmost caution
+        rm -r ${t2wFolder}/t2wToT1wReg
+    fi
 
     echo -e "\n...Performing T2w to T1w Registration"
     log_Msg "mdir -p ${wdir}"
@@ -411,12 +421,30 @@ if [ -e ${wdir} ] ; then
         ${t1wFolder}/xfms/${t1wImage} \
         ${t1wFolder}/${t2wImage}_acpc \
         ${t1wFolder}/xfms/${t2wImage}_reg
+fi
+
 
 # ------------------------------------------------------------------------------
 # Create a One-Step Resampled Version of the T1w_acpc, T2w_acpc outputs
 # ------------------------------------------------------------------------------
 
-if [ ! "${T2wInputImages}" = "NONE" ] ; then
+if [ -z "${t2wInputImages}" ] ; then
+
+    echo -e "\n...Creating One-Step Resampled Version of the T1w_acpc Output"
+    log_Msg "mkdir -p ${t1wFolder}/OneStepResampledACPC"
+    mkdir -p ${t1wFolder}/OneStepResampledACPC
+    ${RUN} ${RPP_Scripts}/OneStepResampledACPC.sh \
+        --workingDir=${t1wFolder}/OneStepResampledACPC \
+        --t1=${t1wFolder}/${t1wImage} \
+        --t1ACPC=${t1wFolder}/${t1wImage}_acpc \
+        --t1ACPCBrain=${t1wFolder}/${t1wImage}_acpc_brain \
+        --ref=${t1wTemplate} \
+        --preMatT1=${t1wFolder}/xfms/acpc.mat \
+        --oT1=${t1wFolder}/${t1wImage}_acpc \
+        --oT1Brain=${t1wFolder}/${t1wImage}_acpc_brain
+
+else
+
     echo -e "\n...Creating One-Step Resampled Version of the T1w_acpc, T2w_acpc outputs"
     log_Msg "mkdir -p ${t1wFolder}/OneStepResampledACPC"
     mkdir -p ${t1wFolder}/OneStepResampledACPC
@@ -429,25 +457,14 @@ if [ ! "${T2wInputImages}" = "NONE" ] ; then
         --t2ACPC=${t2wFolder}/${t2wImage}_acpc \
         --t2ACPCBrain=${t2wFolder}/${t2wImage}_acpc_brain \
         --ref=${t1wTemplate} \
+        --iWarp=${t1wFolder}/xfms/${t2wImage}_reg \
         --preMatT1=${t1wFolder}/xfms/acpc.mat \
         --preMatT2=${t2wFolder}/xfms/acpc.mat \
         --oT1=${t1wFolder}/${t1wImage}_acpc \
         --oT1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
         --oT2=${t2wFolder}/${t2wImage}_acpc \
         --oT2Brain=${t2wFolder}/${t2wImage}_acpc_brain
-else
-    echo -e "\n...Creating One-Step Resampled Version of the T1w_acpc Output"
-    log_Msg "mkdir -p ${t1wFolder}/OneStepResampledACPC"
-    mkdir -p ${t1wFolder}/OneStepResampledACPC
-    ${RUN} ${RPP_Scripts}/OneStepResampledACPC.sh \
-        --workingDir=${t1wFolder}/OneStepResampledACPC \
-        --t1=${t1wFolder}/${t1wImage} \
-        --t1ACPC=${t1wFolder}/${t1wImage}_acpc \
-        --t1ACPCBrain=${t1wFolder}/${t1wImage}_acpc_brain \
-        --ref=${t1wTemplate} \
-        --preMatT1=${t1wFolder}/xfms/acpc.mat \
-        --oT1=${t1wFolder}/${t1wImage}_acpc \
-        --oT1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
+
 fi
 
 # ------------------------------------------------------------------------------
@@ -457,7 +474,6 @@ fi
 # ------------------------------------------------------------------------------
 
 if [ $linear = yes ] ; then
-
     # ------------------------------------------------------------------------------
     #  Atlas Registration to MNI152: FLIRT
     # ------------------------------------------------------------------------------
@@ -470,25 +486,43 @@ if [ $linear = yes ] ; then
         log_Msg "mkdir -p ${atlasSpaceFolder}/xfms/"
         mkdir -p ${atlasSpaceFolder}/xfms/
     fi
-
     echo -e "\n...Performing Atlas Registration to MNI152 (FLIRT)"
-    ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRT.sh \
-        --workingDir=${atlasSpaceFolder} \
-        --t1=${t1wFolder}/${t1wImage}_acpc \
-        --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
-        --t2=${t1wFolder_t2wImageWithPath_acpc_dc} \
-        --t2Brain=${t2wFolder_t2wImageWithPath_acpc_brain} \
-        --ref=${t1wTemplate} \
-        --refBrain=${t1wTemplateBrain} \
-        --refMask=${templateMask} \
-        --oMat=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
-        --oInvMat=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
-        --oT1=${atlasSpaceFolder}/${t1wImage} \
-        --oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain
-        --oT2=${atlasSpaceFolder}/${t2wImage} \
-        --oT2Brain=${atlasSpaceFolder}/${t2wImage}_brain \
+
+    if [ -z "${t2wInputImages}" ] ; then
+
+        ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRT.sh \
+            --workingDir=${atlasSpaceFolder} \
+            --t1=${t1wFolder}/${t1wImage}_acpc \
+            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
+            --ref=${t1wTemplate} \
+            --refBrain=${t1wTemplateBrain} \
+            --refMask=${templateMask} \
+            --oMat=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
+            --oInvMat=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
+            --oT1=${atlasSpaceFolder}/${t1wImage} \
+            --oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain
+
+    else
+
+        ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRT.sh \
+            --workingDir=${atlasSpaceFolder} \
+            --t1=${t1wFolder}/${t1wImage}_acpc \
+            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
+            --t2=${t1wFolder_t2wImageWithPath_acpc} \
+            --t2Brain=${t2wFolder_t2wImageWithPath_acpc_brain} \
+            --ref=${t1wTemplate} \
+            --refBrain=${t1wTemplateBrain} \
+            --refMask=${templateMask} \
+            --oMat=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
+            --oInvMat=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
+            --oT1=${atlasSpaceFolder}/${t1wImage} \
+            --oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain \
+            --oT2=${atlasSpaceFolder}/${t2wImage} \
+            --oT2Brain=${atlasSpaceFolder}/${t2wImage}_brain
+    fi
 
     echo -e "\nLinear RPP Completed"
+
 else
 
     # ------------------------------------------------------------------------------
@@ -505,24 +539,46 @@ else
     fi
 
     echo -e "\n...Performing Atlas Registration to MNI152 (FLIRT and FNIRT)"
-    ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRTandFNIRT.sh \
-        --workingDir=${atlasSpaceFolder} \
-        --t1=${t1wFolder}/${t1wImage}_acpc \
-        --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
-        --t2=${t1wFolder_t2wImageWithPath_acpc_dc} \
-        --t2Brain=${t2wFolder_t2wImageWithPath_acpc_brain} \
-        --ref=${t1wTemplate} \
-        --refBrain=${t1wTemplateBrain} \
-        --refMask=${templateMask} \
-        --ref2mm=${t1wTemplate2mm} \
-        --ref2mmMask=${template2mmMask} \
-        --oWarp=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
-        --oInvWarp=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
-        --oT1=${atlasSpaceFolder}/${t1wImage} \
-        --oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain \
-        --oT2=${atlasSpaceFolder}/${t2wImage} \
-        --oT2Brain=${atlasSpaceFolder}/${t2wImage}_brain \
-        --FNIRTConfig=${FNIRTConfig}
+
+    if [ -z "${t2wInputImages}" ] ; then
+
+        ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRTandFNIRT.sh \
+            --workingDir=${atlasSpaceFolder} \
+            --t1=${t1wFolder}/${t1wImage}_acpc \
+            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
+            --ref=${t1wTemplate} \
+            --refBrain=${t1wTemplateBrain} \
+            --refMask=${templateMask} \
+            --ref2mm=${t1wTemplate2mm} \
+            --ref2mmMask=${template2mmMask} \
+            --oWarp=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
+            --oInvWarp=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
+            --oT1=${atlasSpaceFolder}/${t1wImage} \
+            --oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain \
+            --FNIRTConfig=${FNIRTConfig}
+
+    else
+
+        ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRTandFNIRT.sh \
+            --workingDir=${atlasSpaceFolder} \
+            --t1=${t1wFolder}/${t1wImage}_acpc \
+            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
+            --t2=${t1wFolder_t2wImageWithPath_acpc} \
+            --t2Brain=${t2wFolder_t2wImageWithPath_acpc_brain} \
+            --ref=${t1wTemplate} \
+            --refBrain=${t1wTemplateBrain} \
+            --refMask=${templateMask} \
+            --ref2mm=${t1wTemplate2mm} \
+            --ref2mmMask=${template2mmMask} \
+            --oWarp=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
+            --oInvWarp=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
+            --oT1=${atlasSpaceFolder}/${t1wImage} \
+            --oT1Brain=${atlasSpaceFolder}/${t1wImage}_brain \
+            --oT2=${atlasSpaceFolder}/${t2wImage} \
+            --oT2Brain=${atlasSpaceFolder}/${t2wImage}_brain \
+            --FNIRTConfig=${FNIRTConfig}
+
+    fi
 
     echo -e "\nNonlinear RPP Completed"
- fi
+fi

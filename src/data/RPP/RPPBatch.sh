@@ -181,7 +181,7 @@ function main() {
             # Run (or submit to be run) the RPP.sh script
             # with all the specified parameter values
             ${queuing_command} "${RPPDIR}/RPP.sh" \
-                --studyFolder="$studyFolderBasename" \
+                --studyName="$studyFolderBasename" \
                 --subject="$subject" \
                 --b0="$b0" \
                 --t1="$T1wInputImages" \
@@ -208,7 +208,7 @@ function main() {
             # Run (or submit to be run) the RPP.sh script
             # with all the specified parameter values
             ${queuing_command} "${RPPDIR}/RPP.sh" \
-                --studyFolder="$studyFolderBasename" \
+                --studyName="$studyFolderBasename" \
                 --subject="$subject" \
                 --b0="$b0" \
                 --t1="$T1wInputImages" \

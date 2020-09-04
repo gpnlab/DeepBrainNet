@@ -93,8 +93,8 @@ OutputTransform=`opts_GetOpt1 "--oWarp" $@`  # "$9"
 OutputInvTransform=`opts_GetOpt1 "--oInvWarp" $@`  # "$10"
 OutputT1wImage=`opts_GetOpt1 "--oT1" $@`  # "$11"
 OutputT1wImageBrain=`opts_GetOpt1 "--oT1Brain" $@`  # "$12"
-OutputT2wImage=`opts_GetOpt1 "--oT1" $@`  # "$11"
-OutputT2wImageBrain=`opts_GetOpt1 "--oT1Brain" $@`  # "$12"
+OutputT2wImage=`opts_GetOpt1 "--oT2" $@`  # "$11"
+OutputT2wImageBrain=`opts_GetOpt1 "--oT2Brain" $@`  # "$12"
 FNIRTConfig=`opts_GetOpt1 "--FNIRTConfig" $@`  # "$13"
 
 # default parameters
@@ -109,11 +109,6 @@ T1wBasename=`basename $T1wBasename`;
 #T1wBrainBasename=`${FSLDIR}/bin/remove_ext $T1wBrain`;
 T1wBrainBasename=`remove_ext $T1wBrain`;
 T1wBrainBasename=`basename $T1wBrainBasename`;
-
-T2wBasename=`remove_ext $T2w`;
-T2wBasename=`basename $T2wBasename`;
-T2wBrainBasename=`remove_ext $T2wBrain`;
-T2wBrainBasename=`basename $T2wBrainBasename`;
 
 log_Msg "START: Nonlinear Atlas Registration to MNI152"
 
@@ -143,7 +138,7 @@ ${FSLDIR}/bin/applywarp --rel --interp=nn -i ${T1wBrain} -r ${Reference} -w ${Ou
 ${FSLDIR}/bin/fslmaths ${OutputT1wImage} -mas ${OutputT1wImageBrain} ${OutputT1wImageBrain}
 
 # T2w set of warped outputs(brain/whole-head + orig)
-if [ ! "${T2w}" = "NONE" ] ; then
+if [ -n "${T2w}" ] ; then
     ${FSLDIR}/bin/applywarp --rel --interp=spline -i ${T2w} -r ${Reference} -w ${OutputTransform} -o ${OutputT2wImage}
     ${FSLDIR}/bin/applywarp --rel --interp=nn -i ${T2wBrain} -r ${Reference} -w ${OutputTransform} -o ${OutputT2wImageBrain}
     ${FSLDIR}/bin/fslmaths ${OutputT2wImage} -mas ${OutputT2wImageBrain} ${OutputT2wImageBrain}

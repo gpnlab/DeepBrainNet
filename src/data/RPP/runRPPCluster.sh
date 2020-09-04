@@ -115,9 +115,8 @@ input_parser() {
           --linear=$linear \
           --debugMode=$PRINTCOM
 
-
     # logs have been saved on data dir by now, remove then
-    rm -r $"$(dirname "$0")"/logs/slurm
+    rm -r $"$(dirname "$0")"/logs
 }
 
 input_parser "$@"

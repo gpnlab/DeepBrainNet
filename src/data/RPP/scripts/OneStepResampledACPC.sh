@@ -57,16 +57,17 @@ function main()
     opts_AddMandatory '--t1' 'T1w' 'Input T1w' "a required value; input T1w image"
     opts_AddMandatory '--t1ACPC' 'T1wACPC' 'Input T1w ACPC image' "a required value; input T1w ACPC aligned image"
     opts_AddMandatory '--t1ACPCBrain' 'T1wACPCBrain' 'Input T1w ACPC Brain' "a required value; input T1w ACPC aligned, brain extracted image"
-    opts_AddOptional '--t2' 'T2w' 'Input T2w' "a required value; input T2w image" "NONE"
-    opts_AddOptional '--t2ACPC' 'T2wACPC' 'Input T2w ACPC image' "a required value; input T2w ACPC aligned image" "NONE"
-    opts_AddOptional '--t2ACPCBrain' 'T2wACPCBrain' 'Input T2w ACPC Brain' "a required value; input T2w ACPC aligned, brain extracted image" "NONE"
+    opts_AddOptional '--t2' 'T2w' 'Input T2w' "a required value; input T2w image" ""
+    opts_AddOptional '--t2ACPC' 'T2wACPC' 'Input T2w ACPC image' "a required value; input T2w ACPC aligned image" ""
+    opts_AddOptional '--t2ACPCBrain' 'T2wACPCBrain' 'Input T2w ACPC Brain' "a required value; input T2w ACPC aligned, brain extracted image" ""
     opts_AddMandatory '--ref' 'Reference' 'MNI T1w Template' "a required value; MNI T1w Template"
+    opts_AddOptional '--iWarp' 'T2wToT1w' 'warp transform' "specifies the non-linear warp that should be applied to the T2w to co-register it to T1w prior to warping so it aligns with the ACPC line"  ""
     opts_AddMandatory '--preMatT1' 'PreMatT1' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T1w orign space with the ACPC line"
-    opts_AddOptional '--preMatT2' 'PreMatT2' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T2w orign space with the ACPC line" "NONE"
+    opts_AddOptional '--preMatT2' 'PreMatT2' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T2w orign space with the ACPC line" ""
     opts_AddMandatory '--oT1' 'OutputT1wImage' 'Resampled T1w ACPC aligned image' "a required value; T1w ACPC aligned image warped into the MNI space"
     opts_AddMandatory '--oT1Brain' 'OutputT1wImageBrain' 'Brain extracted resampled T1w ACPC aligned image' "a required value; brain extracted T1w ACPC aligned image warped into the MNI space"
-    opts_AddOptional '--oT2' 'OutputT2wImage' 'Resampled T2w ACPC aligned image' "a required value; T2w ACPC aligned image warped into the MNI space" "NONE"
-    opts_AddOptional '--oT2Brain' 'OutputT2wImageBrain' 'Brain extracted resampled T2w ACPC aligned image' "a required value; brain extracted T2w ACPC aligned image warped into the MNI space" "NONE"
+    opts_AddOptional '--oT2' 'OutputT2wImage' 'Resampled T2w ACPC aligned image' "a required value; T2w ACPC aligned image warped into the MNI space" ""
+    opts_AddOptional '--oT2Brain' 'OutputT2wImageBrain' 'Brain extracted resampled T2w ACPC aligned image' "a required value; brain extracted T2w ACPC aligned image warped into the MNI space" ""
     opts_ParseArguments "$@"
 
     #display the parsed/default values
@@ -106,13 +107,13 @@ function main()
     # Create a One-Step Resampled Version of the T2w_acpc output
     # ------------------------------------------------------------------------------
 
-    if [ ! "${T2wInputImages}" = "NONE" ] ; then
+    if [ -n "${T2w}" ] ; then
         log_Msg "START: One-set resampled version of T2w_acpc output"
         OutputOrigT2w2T1w=origT2w2T1w  # Name for one-step resample warpfield
 
         ${FSLDIR}/bin/fslmerge -t ${WD}/T2w.nii.gz ${T2wACPC} ${T2wACPC} ${T2wACPC}
         ${FSLDIR}/bin/fslmaths ${WD}/T2w.nii.gz -mul 0 ${WD}/T2w.nii.gz
-        convertwarp --relout --rel --ref=${Reference} --premat=${PreMatT2} --warp1=${WD}/T2w_reg.nii.gz --out=${WD}/${OutputOrigT2w2T1w}
+        convertwarp --relout --rel --ref=${Reference} --premat=${PreMatT2} --warp1=${T2wToT1w} --out=${WD}/${OutputOrigT2w2T1w}
 
         applywarp --rel --interp=spline --in=${T2w} --ref=${Reference} --warp=${WD}/${OutputOrigT2w2T1w} --out=${OutputT2wImage}
 
@@ -121,7 +122,7 @@ function main()
         # Apply mask to image
         fslmaths ${OutputT2wImage} -mas ${T2wACPCBrain} ${OutputT2wImageBrain}
 
-        log_Msg "END: One-set resampled version of T1w_acpc output"
+        log_Msg "END: One-set resampled version of T2w_acpc output"
     fi
 
     # ------------------------------------------------------------------------------
