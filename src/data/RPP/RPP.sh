@@ -331,7 +331,7 @@ for tXw in ${Modalities} ; do
     # ------------------------------------------------------------------------------
 
     echo -e "\n...Averaging ${tXw} Scans"
-    if [ `echo $t1wInputImages | wc -w` -gt 1 ] ; then
+    if [ `echo $tXwInputImages | wc -w` -gt 1 ] ; then
         log_Msg "Averaging ${tXw} Images, performing simple averaging"
         log_Msg "mkdir -p ${tXwFolder}/Average${tXw}Images"
         mkdir -p ${tXwFolder}/Average${tXw}Images
