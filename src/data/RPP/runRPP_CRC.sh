@@ -59,7 +59,7 @@ usage() {
 
 input_parser() {
     opts_AddOptional '--job-name' 'jobName' 'name for job allocation' "an optional value; specify a name for the job allocation. Default: ADNI_LinearRPP" "ADNI_LinearRPP"
-    opts_AddOptional '--partition' 'partition' 'request a specifi partition' "an optional value; request a specific partition for the resource allocation (e.g. standard, workstation). Default: standard" "smb"
+    opts_AddOptional '--partition' 'partition' 'request a specifi partition' "an optional value; request a specific partition for the resource allocation (e.g. standard, workstation). Default: standard" "smp"
     opts_AddOptional  '--exclude' 'exclude' 'node to be excluded' "an optional value; Explicitly exclude certain nodes from the resources granted to the job. Default: None" ""
     opts_AddOptional  '--nodes' 'nodes' 'number of nodes' "an optional value; Explicitly exclude certain nodes from the resources granted to the job. Default: None" "1"
     #opts_AddOptional  '--nodelist' 'nodeList' 'request a specific list of hosts' "an optional value;The job will contain all of these hosts and possibly additional hosts as needed to satisfy resource requirements. The list may be specified as a comma-separated list of hosts, a range of hosts (host[1-5,7,...] for example), or a filename. The host list will be assumed to be a filename if it contains a "/" character. If you specify a minimum node or processor count larger than can be satisfied by the supplied host list, additional resources will be allocated on other nodes as needed. Duplicate node names in the list will be ignored. The order of the node names in the list is not important; the node names will be sorted by Slurm. Default: None" ""
