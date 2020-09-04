@@ -201,8 +201,9 @@ cleanup() {
     $SCP -r ${NODE}:${NODEDIR}/tmp/${studyFolderBasename}/preprocessed/RPP/${SUBJECTID}/${b0} ${SERVER}:${studyFolder}/preprocessed/RPP/${SUBJECTID}
     $SCP -r ${SERVER}:${SERVERDIR}/logs/slurm ${SERVER}:${studyFolder}/logs
 
-    echo Files transfered to permanent directory, clean temporary directory
+    echo Files transfered to permanent directory, clean temporary directory and log files
     rm -rf /tmp/work/SLURM_$SLURM_JOB_ID
+    $SSH ${SERVER} "rm -rf ${SERVERDIR}/logs"
 }
 
 early() {

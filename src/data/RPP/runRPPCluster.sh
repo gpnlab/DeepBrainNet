@@ -114,9 +114,6 @@ input_parser() {
           --b0=$b0 \
           --linear=$linear \
           --debugMode=$PRINTCOM
-
-    # logs have been saved on data dir by now, remove then
-    rm -r $"$(dirname "$0")"/logs
 }
 
 input_parser "$@"
