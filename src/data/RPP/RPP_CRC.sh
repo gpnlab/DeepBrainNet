@@ -209,8 +209,8 @@ cleanup() {
     $SCP  -r ${SERVERDIR}/logs/slurm ${studyFolder}/logs
 
     echo Files transfered to permanent directory, clean temporary directory and log files
-    #rm -rf /bgfs/tibrahim/edd32/scratch/work/SLURM_$SLURM_JOB_ID
-    #rm -rf ${SERVERDIR}/logs
+    rm -rf /bgfs/tibrahim/edd32/scratch/work/SLURM_$SLURM_JOB_ID
+    rm -rf ${SERVERDIR}/logs
 
     crc-job-stats.py # gives stats of job, wall time, etc.
 }
