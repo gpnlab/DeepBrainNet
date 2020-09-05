@@ -12,7 +12,7 @@ NODE=$SLURMD_NODENAME
 # The directory from which sbatch was invoked (e.g. proj/DBN/src/data/RPP)
 SERVERDIR=$SLURM_SUBMIT_DIR
 # The working directory in the node named after the ID of the job allocation
-NODEDIR=$SLURM_SCRATCH/work/SLURM_$SLURM_JOB_ID
+NODEDIR=/tmp/work/SLURM_$SLURM_JOB_ID
 #NODEDIR="$SLURM_SCRATCH/work/SLURM_$SLURM_JOB_ID"
 mkdir -p $NODEDIR
 
@@ -199,8 +199,8 @@ cleanup() {
     $SCP  -r ${SERVERDIR}/logs/slurm ${studyFolder}/logs
 
     echo Files transfered to permanent directory, clean temporary directory and log files
-    #rm -rf /$SLURM_SCRATCH/work/SLURM_$SLURM_JOB_ID
-    #rm -rf ${SERVERDIR}/logs
+    rm -rf /$SLURM_SCRATCH/work/SLURM_$SLURM_JOB_ID
+    rm -rf ${SERVERDIR}/logs
 }
 
 early() {

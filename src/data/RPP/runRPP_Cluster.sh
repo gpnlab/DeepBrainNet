@@ -36,10 +36,10 @@ usage() {
         Usage: $log_ToolName [--job-name=<name for job allocation>] default=ADNI_LinearRPP
                              [--partition=<request a specific partition>] default=workstation
                              [--exclude=<node(s) to be excluded>] default=""
-                             [--nodelist=<request a specific list of hosts>] default=""
+                             [--nodes=<minimum number of nodes allocated to this job>] default="1"
+                             [--time=<limit on the total run time of the job allocation>] default="1"
                              [--ntasks=<maximum number of tasks>] default=1
-                             [--cpus-per-task=<required cpus number of processors per task>] default=1
-                             [--mem-per-cpu=<minimum allocated memory per cpu>] default=2gb
+                             [--mem=<specify the real memory required per node>] default=2gb
                              [--export=<export environment variables>] default=ALL
                              [--mail-type=<type of mail>] default=FAIL,END
                              [--mail-user=<user email>] default=eduardojdiniz@gmail.com
@@ -57,16 +57,18 @@ usage() {
     opts_ShowArguments
 }
 
+
 input_parser() {
     opts_AddOptional '--job-name' 'jobName' 'name for job allocation' "an optional value; specify a name for the job allocation. Default: ADNI_LinearRPP" "ADNI_LinearRPP"
     opts_AddOptional '--partition' 'partition' 'request a specifi partition' "an optional value; request a specific partition for the resource allocation (e.g. standard, workstation). Default: standard" "standard"
     opts_AddOptional  '--exclude' 'exclude' 'node to be excluded' "an optional value; Explicitly exclude certain nodes from the resources granted to the job. Default: None" ""
-    opts_AddOptional  '--nodes' 'nodes' 'number of nodes' "an optional value; Explicitly exclude certain nodes from the resources granted to the job. Default: None" "1"
+    opts_AddOptional  '--nodes' 'nodes' 'minimum number of nodes allocated to this job' "an optional value; iIf a job node limit exceeds the number of nodes configured in the partiition, the job will be rejected. Default: 1" "1"
+    opts_AddOptional  '--time' 'time' 'limit on the total run time of the job allocation' "an optional value; When the time limit is reached, each task in each job step is sent SIGTERM followed by SIGKILL. Format: days-hours:minutes:seconds. Default 2 hours: None" "0-05:00:00"
     #opts_AddOptional  '--nodelist' 'nodeList' 'request a specific list of hosts' "an optional value;The job will contain all of these hosts and possibly additional hosts as needed to satisfy resource requirements. The list may be specified as a comma-separated list of hosts, a range of hosts (host[1-5,7,...] for example), or a filename. The host list will be assumed to be a filename if it contains a "/" character. If you specify a minimum node or processor count larger than can be satisfied by the supplied host list, additional resources will be allocated on other nodes as needed. Duplicate node names in the list will be ignored. The order of the node names in the list is not important; the node names will be sorted by Slurm. Default: None" ""
     opts_AddOptional '--ntasks' 'nTasks' 'maximum number tasks' "an optional value; sbatch does not launch tasks, it requests an allocation of resources and submits a batch script. This option advises the Slurm controller that job steps run within the allocation will launch a maximum of number tasks and to provide for sufficient resources. Default: 1" "1"
     #opts_AddOptional '--cpus-per-task' 'CPUsPerTask' 'required ncpus number of processors per task' "an optional value; an optional value; advise the Slurm controller that ensuing job steps will require ncpus number of processors per task. Default: 1" "1"
     #opts_AddOptional  '--mem-per-cpu' 'memPerCPU' 'minimum memory allocated memory per CPU' "an optional value; specify the minimum real memory required per CPU. Default: 4gb" "2000"
-    opts_AddOptional  '--mem' 'mem' 'minimum memory allocated memory per CPU' "an optional value; specify the minimum real memory required per CPU. Default: 2gb" "4gb"
+    opts_AddOptional  '--mem' 'mem' 'specify the real memory requried per node' "an optional value; specify the real memory required per node. Default: 2gb" "2gb"
     opts_AddOptional  '--export' 'export' 'export environment variables' "an optional value; Identify which environment variables from the submission environment are propagated to the launched application. Note that SLURM_* variables are always propagated. Default: All of the users environment will be loaded (either from callers environment or clean environment" "ALL"
     opts_AddOptional  '--mail-type' 'mailType' 'type of mail' "an optional value; notify user by email when certain event types occur. Default: FAIL,END" "FAIL,END"
     opts_AddOptional  '--mail-user' 'mailUser' 'user email' "an optional value; User to receive email notification of state changes as defined by --mail-type. Default: eduardojdiniz@gmail.com" "eduardojdiniz@gmail.com"
@@ -101,8 +103,9 @@ input_parser() {
 	queuing_command="sbatch \
         --job-name=$jobName \
         --partition=$partition \
-        --nodes=$nodes \
         --exclude=$exclude \
+        --nodes=$nodes \
+        --time=$time \
         --ntasks=$nTasks \
         --export=$export \
         --mail-type=$mailType \
