@@ -15,7 +15,6 @@ SERVERDIR=$SLURM_SUBMIT_DIR
 NODEDIR="/tmp/work/SLURM_$SLURM_JOB_ID"
 #NODEDIR="$SLURM_SCRATCH/work/SLURM_$SLURM_JOB_ID"
 mkdir -p $NODEDIR
-cd $NODEDIR
 
 NCPU=`scontrol show hostnames $SLURM_JOB_NODELIST | wc -l`
 echo ------------------------------------------------------
@@ -53,42 +52,36 @@ usage() {
 
 input_parser() {
     # Load input parser functions
-    # Change this for ssh commands
-    setup=$( cd "$SERVERDIR" ; pwd )
-    cd $SERVERDIR
-    . "${setup}/setUpRPP.sh"
+    . "${SERVERDIR}/setUpRPP.sh"
     . "${DBN_Libraries}/newopts.shlib" "$@"
-    cd $NODEDIR
 
     opts_AddMandatory '--studyFolder' 'studyFolder' 'raw data folder path' "a required value; is the path to the study folder holding the raw data. Don't forget the study name (e.g. /mnt/storinator/edd32/data/raw/ADNI)"
     opts_AddMandatory '--subjects' 'subjects' 'path to file with subject IDs' "an required value; path to a file with the IDs of the subject to be processed (e.g. /mnt/storinator/edd32/data/raw/ADNI/subjects.txt)" "--subject" "--subjectList" "--subjList"
     opts_AddOptional  '--b0' 'b0' 'magnetic field intensity' "an optional value; the scanner magnetic field intensity, e.g., 1.5T, 3T, 7T" "3T"
     opts_AddOptional  '--linear'  'linear' '(non)linear registration to MNI' "an optional value; if it is set then only an affine registration to MNI is performed, otherwise, a nonlinear registration to MNI is performed" "yes"
     opts_AddOptional  '--debugMode' 'PRINTCOM' 'do (not) perform a dray run' "an optional value; If PRINTCOM is not a null or empty string variable, then this script and other scripts that it calls will simply print out the primary commands it otherwise would run. This printing will be done using the command specified in the PRINTCOM variable, e.g., echo" "" "--PRINTCOM" "--printcom"
+
     opts_ParseArguments "$@"
-    #studyFolder=$studyFolder
-    #subjects=$subjects
-    #b0=$b0
-    #linear=$linear
-    #debugMode=$PRINTCOM
+
     # Display the parsed/default values
     opts_ShowValues
 }
 
 
 setup() {
+
+    echo Transferring files from server to compute node $NODE
+
+    # Copy RPP scripts from server to node, creating whatever directories required
+    $SCP -r $SERVERDIR $NODEDIR
+
     # Looks in the file of IDs and get the correspoding subject ID for this job
     SUBJECTID=$(head -n $SLURM_ARRAY_TASK_ID "$subjects" | tail -n 1)
     # The directory holding the data for the subject correspoinding ot this job
     SUBJECTDIR=$studyFolder/raw/$SUBJECTID
 
-    echo Transferring files from server to compute node $NODE
-    # Copy RPP scripts and DATA from server to node, creating whatever directories required
-    $SCP -r $SERVER:$SERVERDIR $NODE:$NODEDIR
-    $SCP -r $SERVER:$SUBJECTDIR $NODE:$NODEDIR
-
-    #echo Files in node work directory are as follows:
-    #$SSH $NODE "ls -lahR $NODEDIR"
+    # Copy DATA from server to node, creating whatever directories required
+    $SCP -r $SUBJECTDIR $NODEDIR
 
     # Location of subject folders (named by subjectID)
     studyFolderBasename=`basename $studyFolder`;
@@ -101,8 +94,12 @@ setup() {
 	echo "debugMode: ${PRINTCOM}"
 
     # Create log folder
-    LOGDIR="${NODEDIR}/logs/${studyFolderBasename}/RPP/${SUBJECTID}/${b0}"
-    $SSH $NODE "mkdir -p $LOGDIR"
+    if [ $linear = "yes" ] ; then
+        LOGDIR="${NODEDIR}/logs/linearRPP/${SUBJECTID}/${b0}"
+    else
+        LOGDIR="${NODEDIR}/logs/nonlinearRPP/${SUBJECTID}/${b0}"
+    fi
+    mkdir -p $LOGDIR
 
     # Templates
 
@@ -145,24 +142,24 @@ main() {
     ###############################################################################
 
     # Detect Number of T1w Images and build list of full paths to T1w images
-    numT1ws=`ls ${SUBJECTDIR}/${b0} | grep 'T1w_MPR.$' | wc -l`
+    numT1ws=`ls ${NODEDIR}/${SUBJECTID}/${b0} | grep 'T1w_MPR.$' | wc -l`
     echo "Found ${numT1ws} T1w Images for subject ${SUBJECTID}"
     T1wInputImages=""
     i=1
     while [ $i -le $numT1ws ] ; do
         # An @ symbol separate the T1-weighted image's full paths
-        T1wInputImages=`echo "${T1wInputImages}${SUBJECTDIR}/${b0}/T1w_MPR${i}/${SUBJECTID}_${b0}_T1w_MPR${i}.nii.gz@"`
+        T1wInputImages=`echo "${T1wInputImages}${NODEDIR}/${SUBJECTID}/${b0}/T1w_MPR${i}/${SUBJECTID}_${b0}_T1w_MPR${i}.nii.gz@"`
         i=$(($i+1))
     done
 
     # Detect Number of T2w Images and build list of full paths to T2w images
-    numT2ws=`ls ${SUBJECTID}/${b0} | grep 'T2w_SPC.$' | wc -l`
+    numT2ws=`ls ${NODEDIR}/${SUBJECTID}/${b0} | grep 'T2w_SPC.$' | wc -l`
     echo "Found ${numT2ws} T2w Images for subject ${SUBJECTID}"
     T2wInputImages=""
     i=1
     while [ $i -le $numT2ws ] ; do
         # An @ symbol separate the T2-weighted image's full paths
-        T2wInputImages=`echo "${T2wInputImages}${SUBJECTID}/${b0}/T2w_SPC${i}/${SUBJECTID}_${b0}_T2w_SPC${i}.nii.gz@"`
+        T2wInputImages=`echo "${T2wInputImages}${NODEDIR}/${SUBJECTID}/${b0}/T2w_SPC${i}/${SUBJECTID}_${b0}_T2w_SPC${i}.nii.gz@"`
         i=$(($i+1))
     done
 
@@ -196,14 +193,14 @@ cleanup() {
 	echo Transferring files from node to server
 	echo "Writing files in permanent directory ${studyFolder}/preprocessed/RPP/${SUBJECTID}"
 
-    $SCP -r ${NODE}:${NODEDIR}/logs ${SERVER}:${studyFolder}
-    $SSH ${SERVER} "mkdir -p ${studyFolder}/preprocessed/RPP/${SUBJECTID}"
-    $SCP -r ${NODE}:${NODEDIR}/tmp/${studyFolderBasename}/preprocessed/RPP/${SUBJECTID}/${b0} ${SERVER}:${studyFolder}/preprocessed/RPP/${SUBJECTID}
-    $SCP -r ${SERVER}:${SERVERDIR}/logs/slurm ${SERVER}:${studyFolder}/logs
+    $SCP  -r ${NODEDIR}/logs ${studyFolder}
+    mkdir -p ${studyFolder}/preprocessed/RPP/${SUBJECTID}
+    $SCP  -r ${NODEDIR}/tmp/${studyFolderBasename}/preprocessed/RPP/${SUBJECTID}/${b0} ${studyFolder}/preprocessed/RPP/${SUBJECTID}
+    $SCP  -r ${SERVERDIR}/logs/slurm ${studyFolder}/logs
 
     echo Files transfered to permanent directory, clean temporary directory and log files
-    rm -rf /tmp/work/SLURM_$SLURM_JOB_ID
-    $SSH ${SERVER} "rm -rf ${SERVERDIR}/logs"
+    rm -rf /$SLURM_SCRATCH/work/SLURM_$SLURM_JOB_ID
+    rm -rf ${SERVERDIR}/logs
 }
 
 early() {

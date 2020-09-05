@@ -82,7 +82,6 @@ input_parser() {
 
     opts_ParseArguments "$@"
 
-
     # Get an index for each subject ID; It will be used to submit an array job
     get_subjList $subjects
     delim=""
