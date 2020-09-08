@@ -270,7 +270,7 @@ if [ ! -e ${t1wFolder}/xfms ] ; then
 fi
 
 #if [ ! -e ${t2wFolder}/xfms ] && [ ${t2wFolder} != "NONE" ] ; then
-if [ ! -e ${t2wFolder}/xfms ] && [ -n ${t2wInputImages} ] ; then
+if [[ ! -e ${t2wFolder}/xfms ]] && [[ -n ${t2wInputImages} ]] ; then
     log_Msg "mkdir -p ${t2wFolder}/xfms/"
     mkdir -p ${t2wFolder}/xfms/
 fi
