@@ -1,5 +1,7 @@
 # exclude data from source control by default
-/data/
+/data/raw/
+/data/processed/
+/data/preprocessed/
 example/data/
 # exclude report from source control by default
 /models/

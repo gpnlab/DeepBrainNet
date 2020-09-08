@@ -86,17 +86,19 @@ function main()
         mkdir $wdir
     fi
 
+    # process imagelist
+    imagelist=`echo ${imagelist} | sed 's/@/ /g'`
+
     if [ `echo $imagelist | wc -w` -lt 2 ] ; then
-        Usage;
+        usage
         log_Err_Abort "Must specify at least two images to average"
     fi
 
-    # process imagelist
     newimlist=""
     for fn in $imagelist ; do
         bnm=`$FSLDIR/bin/remove_ext $fn`;
         bnm=`basename $bnm`;
-        $FSLDIR/bin/imln $fn $wdir/$bnm   ## TODO - THIS FAILS WHEN GIVEN RELATIVE PATHS
+        $FSLDIR/bin/imcp $fn $wdir/$bnm   ## TODO - THIS FAILS WHEN GIVEN RELATIVE PATHS
         newimlist="$newimlist $wdir/$bnm"
     done
 
@@ -107,7 +109,7 @@ function main()
     # for each image reorient, register to std space, (optionally do "get transformed FOV and crop it based on this")
     for fn in $newimlist ; do
         $FSLDIR/bin/fslreorient2std ${fn}.nii.gz ${fn}_reorient
-        $FSLDIR/bin/robustfov -i ${fn}_reorient -r ${fn}_roi -m ${fn}_roi2orig.mat $BrainSizeOpt
+        $FSLDIR/bin/robustfov -i ${fn}_reorient -r ${fn}_roi -m ${fn}_roi2orig.mat -b $BrainSizeOpt
         $FSLDIR/bin/convert_xfm -omat ${fn}TOroi.mat -inverse ${fn}_roi2orig.mat
         $FSLDIR/bin/flirt -in ${fn}_roi -ref "$StandardImage" -omat ${fn}roi_to_std.mat -out ${fn}roi_to_std -dof 12 -searchrx -30 30 -searchry -30 30 -searchrz -30 30
         $FSLDIR/bin/convert_xfm -omat ${fn}_std2roi.mat -inverse ${fn}roi_to_std.mat
@@ -156,10 +158,8 @@ function main()
     tot=`echo ${wdir}/ImToHalf* | wc -w`;
     $FSLDIR/bin/fslmaths ${comm} -div $tot ${output}
 
-
-
     # CLEANUP
-    if [ $cleanup != no ] ; then
+    if [ $clean != no ] ; then
         # the following protects the rm -rf call (making sure that it is not null and really is a directory)
         if [ X$wdir != X ] ; then
             if [ -d $wdir ] ; then
@@ -168,7 +168,6 @@ function main()
             fi
         fi
     fi
-
 }
 
 if (($# == 0)) || [[ "$1" == --* ]]

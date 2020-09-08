@@ -28,7 +28,9 @@ $ conda deactivate
 ## RPP
 As of version 1.0.0 the RPP is available.
 
-As of version 1.1.0 it is also possible to perform RPP with linear registration, isntead of nonlinear registration. This is now the default behavior since it conforms with the origional tranning dataset. to change this behavior see the help on function `src/data/RPP/RPP.sh`. Basically, you just need to pass the flag `--linear=no` to `RPP.sh`
+As of version 1.1.0 it is also possible to perform RPP with linear registration, instead of nonlinear registration. This is now the default behavior since it conforms with the origional tranning dataset. to change this behavior see the help on function `src/data/RPP/RPP.sh`. Basically, you just need to pass the flag `--linear=no` to `RPP.sh`
+
+As of version 2.0.0 there is support to processing both T1w and T2w images. It also supports simple anatomical average of repeated scans.
 
 The primary purposes of the RPP are:
 
@@ -64,18 +66,24 @@ At least one T1 weighted image is required for this script to work.
 All outputs are generated within the tree rooted
 at `${studyFolder}/${subject}`.  The main output directories are:
 
-* The t1wFolder: `${DBNDir}/data/interim/${studyFolder}/${subject}/{b0}/t1w`
+* The t1wFolder: `${DBNDir}/data/preprocessed/${studyFolder}/${subject}/{b0}/t1w`
+* The t2wFolder: `${DBNDir}/data/preprocessed/${studyFolder}/${subject}/{b0}/t2w`
 * The atlasSpaceFolder: `${studyFolder}/${subject}/${b0}/MNINonLinear` or
 * The atlasSpaceFolder: `${studyFolder}/${subject}/${b0}/MNILinear`,
 if linear registration is to MNI space is performed
 
-All outputs are generated in directories at or below these two main
+All outputs are generated in directories at or below these three main
 output directories.  The full list of output directories is:
 
 * `${t1wFolder}/AverageT1wImages`
 * `${t1wFolder}/ACPCAlignment`
 * `${t1wFolder}/BrainExtractionFNIRTbased`
 * `${t1wFolder}/xfms` - transformation matrices and warp fields
+
+* `${t2wFolder}/AverageT1wImages`
+* `${t2wFolder}/ACPCAlignment`
+* `${t2wFolder}/BrainExtractionFNIRTbased`
+* `${t2wFolder}/xfms` - transformation matrices and warp fields
 
 * `${atlasSpaceFolder}`
 * `${atlasSpaceFolder}/xfms`
@@ -84,15 +92,19 @@ Note that no assumptions are made about the input paths with respect to the
 output directories. All specification of input files is done via command
 line arguments specified when this script is invoked.
 
-Also note that the following output directory is created:
+Also note that the following output directories are created:
 
 * `t1wFolder`, which is created by concatenating the following four option
 values: `--studyFolder / --subject / --b0 / --t1`
+* `t2wFolder`, which is created by concatenating the following four option
+values: `--studyFolder / --subject / --b0 / --t2`
 
 Logs are saved in `logs/RPP`
 
 ### Running RPP on a computer cluster
-As of version 1.2.0, it is possible to submit RPP jobs to a cluster. More information by seeing the help `src/data/RPP/runRPPCluster.sh --help`. There you can find all the flags you can submit to slurm-managed clusters (e.g. CRC). The submitting script can be found in `src/data/RPP/RPPCluster.sh`.
+As of version 1.2.0, it is possible to submit RPP jobs to a cluster. More information by seeing the help `src/data/RPP/run_RPP_Cluster.sh --help`. There you can find all the flags you can submit to slurm-managed clusters. The submitting script can be found in `src/data/RPP/RPP_Cluster.sh`.
+
+As of version 1.3.0, it is also possible to submit RPP jobs to the H2P computational cluster at the Center for Research Computing (CRC). More information by seeing the help `src/data/RPP/run_RPP_CRC.sh --help`. The submitting script can be found in `src/data/RPP/RPP_CRC.sh`. Remember to load python before calling the script with `module load python/anaconda3.7-5.2.0` as it requires `numpy`.
 
 <!-- References -->
 [FSL]: http://fsl.fmrib.ox.ac.uk
