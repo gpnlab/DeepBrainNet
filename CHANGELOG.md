@@ -6,6 +6,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2020-09-08
+### Added
+- src/data/RPP/RPP_workstation.sh
+- src/data/RPP/runRPP_workstation.sh
+- src/data/RPP/organize_HCP_unprocessed_data.sh Translate folder scheme from HCP to RPP style
+
+### Changed
+- src/data/RPP/runRPPCRC.sh -> src/data/RPP/runRPP_CRC.sh
+- src/data/RPP/runRPPCluster.sh -> src/data/RPP/runRPP_Cluster.sh
+
+### Removed
+
+### Fixed
+- src/data/RPP/RPP.sh Fix non-binary comparision
+- src/data/rpp/rpp_crc.sh fix module loading in crc
+- src/data/RPP/scripts/AnatomicalAverage.sh Fix image paths
+- src/data/RPP/runRPP_CRC.sh Increase mem-per-cpu and time limit for job completion
+
+## [1.3.0] - 2020-09-04
+### Added
+- .gitignore add /data/external to source control
+
+### Changed
+- src/data/RPP/RPPBatch.sh Add T2w processing capability
+- src/data/RPP/RPPBatch.sh Replace `--studyFolder` by `--sutdyName`
+- src/data/RPP/runRPPCluster.sh add the `--linear` flag
+- src/data/RPP/scripts/* Add T2w processing capability
+
+### Removed
+
+### Fixed
+- src/data/RPP/scripts/AnatomicalAverage.sh Replace imln with imcp
+- src/data/RPP/scripts/AnatomicalAverage.sh Replace `cleanup` with `clean`
+
 ## [1.2.0] - 2020-09-01
 ### Added
 - .cvsignore files and folders to be ignored by rsync
