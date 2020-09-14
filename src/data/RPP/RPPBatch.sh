@@ -157,10 +157,14 @@ function main() {
 		T2wTemplateBrain="${MNI_Templates}/MNI152_T2_0.7mm_brain.nii.gz"
 		# Lowres T1w MNI template
 		T2wTemplate2mm="${MNI_Templates}/MNI152_T2_2mm.nii.gz"
-		# Hires MNI brain mask template
-		TemplateMask="${MNI_Templates}/MNI152_T1_0.7mm_brain_mask.nii.gz"
-		# Lowres MNI brain mask template
-		Template2mmMask="${MNI_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz"
+		# Hires T1w MNI brain mask template
+		T1wTemplateMask="${MNI_Templates}/MNI152_T1_0.7mm_brain_mask.nii.gz"
+		# Lowres T1w MNI brain mask template
+		T1wTemplate2mmMask="${MNI_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz"
+		# Hires T2w MNI brain mask template
+		T2wTemplateMask="${MNI_Templates}/MNI152_T2_0.7mm_brain_mask.nii.gz"
+		# Lowres T2w MNI brain mask template
+		T2wTemplate2mmMask="${MNI_Templates}/MNI152_T2_2mm_brain_mask_dil.nii.gz"
 
 		# Other Config Settings
 
@@ -192,8 +196,10 @@ function main() {
                 --t2Template="$T2wTemplate" \
                 --t2TemplateBrain="$T2wTemplateBrain" \
                 --t2Template2mm="$T2wTemplate2mm" \
-                --templateMask="$TemplateMask" \
-                --template2mmMask="$Template2mmMask" \
+                --t1TemplateMask="$T1wTemplateMask" \
+                --t1Template2mmMask="$T1wTemplate2mmMask" \
+                --t2TemplateMask="$T2wTemplateMask" \
+                --t2Template2mmMask="$T2wTemplate2mmMask" \
                 --brainSize="$BrainSize" \
                 --linear="$linear" \
                 --FNIRTConfig="$FNIRTConfig" \
@@ -219,8 +225,10 @@ function main() {
                 --t2Template="$T2wTemplate" \
                 --t2TemplateBrain="$T2wTemplateBrain" \
                 --t2Template2mm="$T2wTemplate2mm" \
-                --templateMask="$TemplateMask" \
-                --template2mmMask="$Template2mmMask" \
+                --t1TemplateMask="$T1wTemplateMask" \
+                --t1Template2mmMask="$T1wTemplate2mmMask" \
+                --t2TemplateMask="$T2wTemplateMask" \
+                --t2Template2mmMask="$T2wTemplate2mmMask" \
                 --brainSize="$BrainSize" \
                 --linear="$linear" \
                 --FNIRTConfig="$FNIRTConfig" \

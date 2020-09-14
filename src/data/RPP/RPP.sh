@@ -192,8 +192,10 @@ t1wTemplate2mm=`opts_GetOpt1 "--t1Template2mm" $@`
 t2wTemplate=`opts_GetOpt1 "--t2Template" $@`
 t2wTemplateBrain=`opts_GetOpt1 "--t2TemplateBrain" $@`
 t2wTemplate2mm=`opts_GetOpt1 "--t2Template2mm" $@`
-templateMask=`opts_GetOpt1 "--templateMask" $@`
-template2mmMask=`opts_GetOpt1 "--template2mmMask" $@`
+t1wTemplateMask=`opts_GetOpt1 "--t1TemplateMask" $@`
+t1wTemplate2mmMask=`opts_GetOpt1 "--t1Template2mmMask" $@`
+t2wTemplateMask=`opts_GetOpt1 "--t2TemplateMask" $@`
+t2wTemplate2mmMask=`opts_GetOpt1 "--t2Template2mmMask" $@`
 brainSize=`opts_GetOpt1 "--brainSize" $@`
 linear=`opts_GetOpt1 "--linear" $@`
 FNIRTConfig=`opts_GetOpt1 "--FNIRTConfig" $@`
@@ -216,8 +218,10 @@ log_Msg "t1wTemplate2mm: ${t1wTemplate2mm}"
 log_Msg "t2wTemplate: ${t2wTemplate}"
 log_Msg "t2wTemplateBrain: ${t2wTemplateBrain}"
 log_Msg "t2wTemplate2mm: ${t2wTemplate2mm}"
-log_Msg "templateMask: ${templateMask}"
-log_Msg "template2mmMask: ${template2mmMask}"
+log_Msg "t1wTemplateMask: ${t1wTemplateMask}"
+log_Msg "t1wTemplate2mmMask: ${t1wTemplate2mmMask}"
+log_Msg "t2wTemplateMask: ${t2wTemplateMask}"
+log_Msg "t2wTemplate2mmMask: ${t2wTemplate2mmMask}"
 log_Msg "brainSize: ${brainSize}"
 log_Msg "linear: ${linear}"
 log_Msg "FNIRTConfig: ${FNIRTConfig}"
@@ -297,12 +301,16 @@ for tXw in ${Modalities} ; do
         tXwImage="${t1wImage}"
         tXwTemplate="${t1wTemplate}"
         tXwTemplate2mm="${t1wTemplate2mm}"
+        tXwTemplateMask="${t1wTemplateMask}"
+        tXwTemplate2mmMask="${t1wTemplate2mmMask}"
     else
         tXwInputImages="${t2wInputImages}"
         tXwFolder="${t2wFolder}"
         tXwImage="${t2wImage}"
         tXwTemplate="${t2wTemplate}"
         tXwTemplate2mm="${t2wTemplate2mm}"
+        tXwTemplateMask="${t2wTemplateMask}"
+        tXwTemplate2mmMask="${t2wTemplate2mmMask}"
     fi
     outputTXwImageString=""
 
@@ -339,7 +347,7 @@ for tXw in ${Modalities} ; do
             --workingDir=${tXwFolder}/Average${tXw}Images \
             --imageList=${outputTXwImageString} \
             --ref=${tXwTemplate} \
-            --refMask=${templateMask} \
+            --refMask=${tXwTemplateMask} \
             --brainSize=${brainSize} \
             --out=${tXwFolder}/${tXwImage} \
             --crop=no \
@@ -376,9 +384,9 @@ for tXw in ${Modalities} ; do
         --workingDir=${tXwFolder}/BrainExtractionFNIRTbased \
         --in=${tXwFolder}/${tXwImage}_acpc \
         --ref=${tXwTemplate} \
-        --refMask=${templateMask} \
+        --refMask=${tXwTemplateMask} \
         --ref2mm=${tXwTemplate2mm} \
-        --ref2mmMask=${template2mmMask} \
+        --ref2mmMask=${tXwTemplate2mmMask} \
         --outBrain=${tXwFolder}/${tXwImage}_acpc_brain \
         --outBrainMask=${tXwFolder}/${tXwImage}_acpc_brain_mask \
         --FNIRTConfig=${FNIRTConfig}
@@ -548,7 +556,7 @@ else
             --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
-            --refMask=${templateMask} \
+            --refMask=${t1wTemplateMask} \
             --ref2mm=${t1wTemplate2mm} \
             --ref2mmMask=${template2mmMask} \
             --oWarp=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
@@ -567,9 +575,9 @@ else
             --t2Brain=${t2wFolder_t2wImageWithPath_acpc_brain} \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
-            --refMask=${templateMask} \
+            --refMask=${t1wTemplateMask} \
             --ref2mm=${t1wTemplate2mm} \
-            --ref2mmMask=${template2mmMask} \
+            --ref2mmMask=${t1wTemplate2mmMask} \
             --oWarp=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
             --oInvWarp=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
             --oT1=${atlasSpaceFolder}/${t1wImage} \
