@@ -204,10 +204,8 @@ t1wTemplate2mm=`opts_GetOpt1 "--t1Template2mm" $@`
 t2wTemplate=`opts_GetOpt1 "--t2Template" $@`
 t2wTemplateBrain=`opts_GetOpt1 "--t2TemplateBrain" $@`
 t2wTemplate2mm=`opts_GetOpt1 "--t2Template2mm" $@`
-t1wTemplateMask=`opts_GetOpt1 "--t1TemplateMask" $@`
-t1wTemplate2mmMask=`opts_GetOpt1 "--t1Template2mmMask" $@`
-t2wTemplateMask=`opts_GetOpt1 "--t2TemplateMask" $@`
-t2wTemplate2mmMask=`opts_GetOpt1 "--t2Template2mmMask" $@`
+TemplateMask=`opts_GetOpt1 "--templateMask" $@`
+Template2mmMask=`opts_GetOpt1 "--template2mmMask" $@`
 brainSize=`opts_GetOpt1 "--brainSize" $@`
 linear=`opts_GetOpt1 "--linear" $@`
 windowSize=`opts_GetOpt1 "--windowSize" $@`
@@ -231,10 +229,8 @@ log_Msg "t1wTemplate2mm: ${t1wTemplate2mm}"
 log_Msg "t2wTemplate: ${t2wTemplate}"
 log_Msg "t2wTemplateBrain: ${t2wTemplateBrain}"
 log_Msg "t2wTemplate2mm: ${t2wTemplate2mm}"
-log_Msg "t1wTemplateMask: ${t1wTemplateMask}"
-log_Msg "t1wTemplate2mmMask: ${t1wTemplate2mmMask}"
-log_Msg "t2wTemplateMask: ${t2wTemplateMask}"
-log_Msg "t2wTemplate2mmMask: ${t2wTemplate2mmMask}"
+log_Msg "TemplateMask: ${TemplateMask}"
+log_Msg "Template2mmMask: ${Template2mmMask}"
 log_Msg "brainSize: ${brainSize}"
 log_Msg "linear: ${linear}"
 log_Msg "windowSize: ${windowSize}"
@@ -317,16 +313,12 @@ for tXw in ${Modalities} ; do
         tXwImage="${t1wImage}"
         tXwTemplate="${t1wTemplate}"
         tXwTemplate2mm="${t1wTemplate2mm}"
-        tXwTemplateMask="${t1wTemplateMask}"
-        tXwTemplate2mmMask="${t1wTemplate2mmMask}"
     else
         tXwInputImages="${t2wInputImages}"
         tXwFolder="${t2wFolder}"
         tXwImage="${t2wImage}"
         tXwTemplate="${t2wTemplate}"
         tXwTemplate2mm="${t2wTemplate2mm}"
-        tXwTemplateMask="${t2wTemplateMask}"
-        tXwTemplate2mmMask="${t2wTemplate2mmMask}"
     fi
     outputTXwImageString=""
 
@@ -377,7 +369,7 @@ for tXw in ${Modalities} ; do
             --workingDir=${tXwFolder}/Average${tXw}Images \
             --imageList=${outputTXwImageString} \
             --ref=${tXwTemplate} \
-            --refMask=${tXwTemplateMask} \
+            --refMask=${TemplateMask} \
             --brainSize=${brainSize} \
             --out=${tXwFolder}/${tXwImage}_bc \
             --crop=no \
@@ -399,8 +391,8 @@ for tXw in ${Modalities} ; do
         --workingDir=${tXwFolder}/BrainExtractionFNIRTbased \
         --in=${tXwFolder}/${tXwImage}_bc \
         --ref=${tXwTemplate} \
-        --refMask=${tXwTemplateMask} \
-        --ref2mm=${tXwTemplate2mm} \
+        --refMask=${TemplateMask} \
+        --ref2mm=${Template2mm} \
         --ref2mmMask=${tXwTemplate2mmMask} \
         --outBrain=${tXwFolder}/${tXwImage}_bc_brain \
         --outBrainMask=${tXwFolder}/${tXwImage}_bc_brain_mask \
@@ -556,7 +548,7 @@ if [ $linear = yes ] ; then
             --t2Brain=${t1wFolder}/${t2wImage}_bc_acpc_brain_final \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
-            --refMask=${t1wTemplateMask} \
+            --refMask=${TemplateMask} \
             --oMat=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
             --oInvMat=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
             --oT1=${atlasSpaceFolder}/${t1wImage} \
@@ -592,7 +584,7 @@ else
             --t1Brain=${t1wFolder}/${t1wImage}_bc_acpc_brain_final \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
-            --refMask=${t1wTemplateMask} \
+            --refMask=${TemplateMask} \
             --ref2mm=${t1wTemplate2mm} \
             --ref2mmMask=${template2mmMask} \
             --oWarp=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
@@ -611,9 +603,9 @@ else
             --t2Brain=${t1wFolder}/${t2wImage}_bc_acpc_brain_final \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
-            --refMask=${t1wTemplateMask} \
+            --refMask=${TemplateMask} \
             --ref2mm=${t1wTemplate2mm} \
-            --ref2mmMask=${t1wTemplate2mmMask} \
+            --ref2mmMask=${Template2mmMask} \
             --oWarp=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
             --oInvWarp=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
             --oT1=${atlasSpaceFolder}/${t1wImage} \
