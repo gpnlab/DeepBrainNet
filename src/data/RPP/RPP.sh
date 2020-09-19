@@ -402,9 +402,8 @@ done
 # ------------------------------------------------------------------------------
 
 
+echo -e "\n...Performing T2w to T1w Registration"
 if [ -z "${t2wInputImages}" ] ; then
-
-    echo -e "\n...Performing T2w to T1w Registration"
     log_Msg "Skipping T2w to T1w registration --- no T2w image."
 
 else
@@ -417,7 +416,6 @@ else
         rm -r ${t2wFolder}/t2wToT1wReg
     fi
 
-    echo -e "\n...Performing T2w to T1w Registration"
     log_Msg "mdir -p ${wdir}"
     mkdir -p ${wdir}
 
@@ -449,8 +447,10 @@ if [ -z "${t2wInputImages}" ] ; then
         --t1=${t1wFolder}/${t1wImage} \
         --t1ACPC=${t1wFolder}/${t1wImage}_acpc \
         --t1ACPCBrain=${t1wFolder}/${t1wImage}_acpc_brain \
-        --ref=${t1wTemplate} \
         --preMatT1=${t1wFolder}/xfms/acpc.mat \
+        --T1w2T1w=${t1wFolder}/xfms/${t1wImage} \
+        --ref=${t1wTemplate} \
+        --oWarpT1=${t1wFolder}/xfms/origT1w2T1w \
         --oT1=${t1wFolder}/${t1wImage}_acpc \
         --oT1Brain=${t1wFolder}/${t1wImage}_acpc_brain
 
@@ -464,17 +464,20 @@ else
         --t1=${t1wFolder}/${t1wImage} \
         --t1ACPC=${t1wFolder}/${t1wImage}_acpc \
         --t1ACPCBrain=${t1wFolder}/${t1wImage}_acpc_brain \
+        --preMatT1=${t1wFolder}/xfms/acpc.mat \
+        --t1w2T1w=${t1wFolder}/xfms/${t1wImage} \
         --t2=${t2wFolder}/${t2wImage} \
         --t2ACPC=${t2wFolder}/${t2wImage}_acpc \
         --t2ACPCBrain=${t2wFolder}/${t2wImage}_acpc_brain \
-        --ref=${t1wTemplate} \
-        --iWarp=${t1wFolder}/xfms/${t2wImage}_reg \
-        --preMatT1=${t1wFolder}/xfms/acpc.mat \
         --preMatT2=${t2wFolder}/xfms/acpc.mat \
-        --oT1=${t1wFolder}/${t1wImage}_acpc \
-        --oT1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
-        --oT2=${t2wFolder}/${t2wImage}_acpc \
-        --oT2Brain=${t2wFolder}/${t2wImage}_acpc_brain
+        --t2w2T1w=${t1wFolder}/xfms/${t2wImage}_reg \
+        --ref=${t1wTemplate} \
+        --oWarpT1=${t1wFolder}/xfms/origT1w2T1w \
+        --oT1=${t1wFolder}/${t1wImage}_acpc_final \
+        --oT1Brain=${t1wFolder}/${t1wImage}_acpc_brain_final \
+        --oWarpT2=${t1wFolder}/xfms/origT2w2T1w \
+        --oT2=${t1wFolder}/${t2wImage}_acpc_final \
+        --oT2Brain=${t1wFolder}/${t2wImage}_acpc_brain_final
 
 fi
 
@@ -503,8 +506,8 @@ if [ $linear = yes ] ; then
 
         ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRT.sh \
             --workingDir=${atlasSpaceFolder} \
-            --t1=${t1wFolder}/${t1wImage}_acpc \
-            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
+            --t1=${t1wFolder}/${t1wImage}_acpc_final \
+            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain_final \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
             --refMask=${templateMask} \
@@ -517,13 +520,13 @@ if [ $linear = yes ] ; then
 
         ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRT.sh \
             --workingDir=${atlasSpaceFolder} \
-            --t1=${t1wFolder}/${t1wImage}_acpc \
-            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
-            --t2=${t1wFolder_t2wImageWithPath_acpc} \
-            --t2Brain=${t2wFolder_t2wImageWithPath_acpc_brain} \
+            --t1=${t1wFolder}/${t1wImage}_acpc_final \
+            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain_final \
+            --t2=${t1wFolder}/${t2wImage}_acpc_final \
+            --t2Brain=${t1wFolder}/${t2wImage}_acpc_brain_final \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
-            --refMask=${templateMask} \
+            --refMask=${t1wTemplateMask} \
             --oMat=${atlasSpaceFolder}/xfms/acpc2standard.nii.gz \
             --oInvMat=${atlasSpaceFolder}/xfms/standard2acpc.nii.gz \
             --oT1=${atlasSpaceFolder}/${t1wImage} \
@@ -555,8 +558,8 @@ else
 
         ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRTandFNIRT.sh \
             --workingDir=${atlasSpaceFolder} \
-            --t1=${t1wFolder}/${t1wImage}_acpc \
-            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
+            --t1=${t1wFolder}/${t1wImage}_acpc_final \
+            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain_final \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
             --refMask=${t1wTemplateMask} \
@@ -572,10 +575,10 @@ else
 
         ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRTandFNIRT.sh \
             --workingDir=${atlasSpaceFolder} \
-            --t1=${t1wFolder}/${t1wImage}_acpc \
-            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain \
-            --t2=${t1wFolder_t2wImageWithPath_acpc} \
-            --t2Brain=${t2wFolder_t2wImageWithPath_acpc_brain} \
+            --t1=${t1wFolder}/${t1wImage}_acpc_final \
+            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain_final \
+            --t2=${t1wFolder}/${t2wImage}_acpc_final \
+            --t2Brain=${t1wFolder}/${t2wImage}_acpc_brain_final \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
             --refMask=${t1wTemplateMask} \

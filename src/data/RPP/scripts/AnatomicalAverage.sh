@@ -98,7 +98,7 @@ function main()
     for fn in $imagelist ; do
         bnm=`$FSLDIR/bin/remove_ext $fn`;
         bnm=`basename $bnm`;
-        $FSLDIR/bin/imcp $fn $wdir/$bnm   ## TODO - THIS FAILS WHEN GIVEN RELATIVE PATHS
+        $FSLDIR/bin/imcp $fn $wdir/$bnm
         newimlist="$newimlist $wdir/$bnm"
     done
 

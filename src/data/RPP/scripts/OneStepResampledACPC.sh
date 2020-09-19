@@ -64,6 +64,10 @@ function main()
     opts_AddOptional '--iWarp' 'T2wToT1w' 'warp transform' "specifies the non-linear warp that should be applied to the T2w to co-register it to T1w prior to warping so it aligns with the ACPC line"  ""
     opts_AddMandatory '--preMatT1' 'PreMatT1' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T1w orign space with the ACPC line"
     opts_AddOptional '--preMatT2' 'PreMatT2' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T2w orign space with the ACPC line" ""
+    opts_AddMandatory '--t1w2T1w' 'T1w2T1w' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T1w orign space with the ACPC line"
+    opts_AddOptional '--t2w2T1w' 'T2w2T1w' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T2w orign space with the ACPC line" ""
+    opts_AddMandatory '--oWarpT1' 'origT1w2T1w' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T1w orign space with the ACPC line"
+    opts_AddOptional '--oWarpT2' 'origT2w2T1w' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T2w orign space with the ACPC line" ""
     opts_AddMandatory '--oT1' 'OutputT1wImage' 'Resampled T1w ACPC aligned image' "a required value; T1w ACPC aligned image warped into the MNI space"
     opts_AddMandatory '--oT1Brain' 'OutputT1wImageBrain' 'Brain extracted resampled T1w ACPC aligned image' "a required value; brain extracted T1w ACPC aligned image warped into the MNI space"
     opts_AddOptional '--oT2' 'OutputT2wImage' 'Resampled T2w ACPC aligned image' "a required value; T2w ACPC aligned image warped into the MNI space" ""
@@ -86,15 +90,9 @@ function main()
     # ------------------------------------------------------------------------------
 
     log_Msg "START: One-set resampled version of T1w_acpc output"
-    OutputOrigT1w2T1w=origT1w2T1w  # Name for one-step resample warpfield
 
-    # TODO: Figure out a better name for ${WD}/T1w.nii.gz
-    # -t tells fsl to merge in time
-    ${FSLDIR}/bin/fslmerge -t ${WD}/T1w.nii.gz ${T1wACPC} ${T1wACPC} ${T1wACPC}
-    ${FSLDIR}/bin/fslmaths ${WD}/T1w.nii.gz -mul 0 ${WD}/T1w.nii.gz
-    convertwarp --relout --rel --ref=${Reference} --premat=${PreMatT1} --warp1=${WD}/T1w.nii.gz --out=${WD}/${OutputOrigT1w2T1w}
-
-    applywarp --rel --interp=spline --in=${T1w} --ref=${Reference} --warp=${WD}/${OutputOrigT1w2T1w} --out=${OutputT1wImage}
+    convertwarp --relout --rel --ref=${Reference} --premat=${PreMatT1} --warp1=${T1w2T1w} --out=${origT1w2T1w}
+    applywarp --rel --interp=spline --in=${T1w} --ref=${Reference} --warp=${origT1w2T1w} --out=${OutputT1wImage}
 
     # Use -abs (rather than '-thr 0') to avoid introducing zeros
     fslmaths ${OutputT1wImage} -abs ${OutputT1wImage} -odt float
@@ -109,18 +107,14 @@ function main()
 
     if [ -n "${T2w}" ] ; then
         log_Msg "START: One-set resampled version of T2w_acpc output"
-        OutputOrigT2w2T1w=origT2w2T1w  # Name for one-step resample warpfield
 
-        ${FSLDIR}/bin/fslmerge -t ${WD}/T2w.nii.gz ${T2wACPC} ${T2wACPC} ${T2wACPC}
-        ${FSLDIR}/bin/fslmaths ${WD}/T2w.nii.gz -mul 0 ${WD}/T2w.nii.gz
-        convertwarp --relout --rel --ref=${Reference} --premat=${PreMatT2} --warp1=${T2wToT1w} --out=${WD}/${OutputOrigT2w2T1w}
-
-        applywarp --rel --interp=spline --in=${T2w} --ref=${Reference} --warp=${WD}/${OutputOrigT2w2T1w} --out=${OutputT2wImage}
+        convertwarp --relout --rel --ref=${Reference} --premat=${PreMatT2} --warp1=${T2w2T1w} --out=${origT2w2T1w}
+        applywarp --rel --interp=spline --in=${T2w} --ref=${Reference} --warp=${origT2w2T1w} --out=${OutputT2wImage}
 
         # Use -abs (rather than '-thr 0') to avoid introducing zeros
         fslmaths ${OutputT2wImage} -abs ${OutputT2wImage} -odt float
         # Apply mask to image
-        fslmaths ${OutputT2wImage} -mas ${T2wACPCBrain} ${OutputT2wImageBrain}
+        fslmaths ${OutputT2wImage} -mas ${T1wACPCBrain} ${OutputT2wImageBrain}
 
         log_Msg "END: One-set resampled version of T2w_acpc output"
     fi
