@@ -93,12 +93,12 @@ OutputBrainMask=`getopt1 "--outBrainMask" $@` # "$8"
 FNIRTConfig=`getopt1 "--FNIRTConfig" $@` # "$9"
 
 # default parameters
-WD=`defaultopt $WD .`
-Reference=`defaultopt $Reference ${MNI_Templates}/MNI152_T1_0.7mm.nii.gz`
-ReferenceMask=`defaultopt $ReferenceMask ${MNI_Templates}/MNI152_T1_0.7mm_brain_mask.nii.gz`  # dilate to be conservative with final brain mask
-Reference2mm=`defaultopt $Reference2mm ${MNI_Templates}/MNI152_T1_2mm.nii.gz`
-Reference2mmMask=`defaultopt $Reference2mmMask ${MNI_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz`  # dilate to be conservative with final brain mask
-FNIRTConfig=`defaultopt $FNIRTConfig ${RPP_Config}/T1_2_MNI152_2mm.cnf`
+#WD=`defaultopt $WD .`
+#Reference=`defaultopt $Reference ${MNI_Templates}/MNI152_T1_0.7mm.nii.gz`
+#ReferenceMask=`defaultopt $ReferenceMask ${MNI_Templates}/MNI152_T1_0.7mm_brain_mask.nii.gz`  # dilate to be conservative with final brain mask
+#Reference2mm=`defaultopt $Reference2mm ${MNI_Templates}/MNI152_T1_2mm.nii.gz`
+#Reference2mmMask=`defaultopt $Reference2mmMask ${MNI_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz`  # dilate to be conservative with final brain mask
+#FNIRTConfig=`defaultopt $FNIRTConfig ${RPP_Config}/T1_2_MNI152_2mm.cnf`
 
 BaseName=`${FSLDIR}/bin/remove_ext $Input`;
 BaseName=`basename $BaseName`;

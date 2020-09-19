@@ -70,9 +70,11 @@ if [ $# -lt 5 ] ; then Usage; exit 1; fi
 
 # parse arguments
 WD=`getopt1 "--workingDir" $@`  # "$1"
-Input=`getopt1 "--in" $@`  # "$2"
+InputImage=`getopt1 "--inImage" $@`  # "$2"
+InputBrain=`getopt1 "--inBrain" $@`  # "$2"
 Reference=`getopt1 "--ref" $@`  # "$3"
-Output=`getopt1 "--out" $@`  # "$4"
+OutputImage=`getopt1 "--outImage" $@`  # "$4"
+OutputBrain=`getopt1 "--outBrain" $@`  # "$4"
 OutputMatrix=`getopt1 "--oMat" $@`  # "$5"
 BrainSizeOpt=`getopt1 "--brainSize" $@`  # "$6"
 
@@ -95,15 +97,16 @@ echo "date: `date`" >> $WD/log.txt
 echo " " >> $WD/log.txt
 
 ########################################## DO WORK ##########################################
-
 # Crop the FOV
-${FSLDIR}/bin/robustfov -i "$Input" -m "$WD"/roi2full.mat -r "$WD"/robustroi.nii.gz $BrainSizeOpt
+${FSLDIR}/bin/robustfov -i "$InputImage" -m "$WD"/roi2full.mat -r "$WD"/robustroi.nii.gz -b $BrainSizeOpt
+#${FSLDIR}/bin/robustfov -i "$Input" -m "$WD"/roi2full.mat -r "$WD"/robustfov.nii.gz
 
 # Invert the matrix (to get full FOV to ROI)
 ${FSLDIR}/bin/convert_xfm -omat "$WD"/full2roi.mat -inverse "$WD"/roi2full.mat
 
 # Register cropped image to MNI152 (12 DOF)
-${FSLDIR}/bin/flirt -interp spline -in "$WD"/robustroi.nii.gz -ref "$Reference" -omat "$WD"/roi2std.mat -out "$WD"/acpc_final.nii.gz -searchrx -30 30 -searchry -30 30 -searchrz -30 30
+${FSLDIR}/bin/flirt -interp spline -in $InputBrain -ref "$Reference" -omat "$WD"/roi2std.mat -out "$WD"/acpc_final.nii.gz -searchrx -30 30 -searchry -30 30 -searchrz -30 30 -dof 12
+#${FSLDIR}/bin/flirt -interp spline -in "$WD"/robustfov.nii.gz -ref "$Reference" -omat "$WD"/roi2std.mat -out "$WD"/acpc_mni.nii.gz
 
 # Concatenate matrices to get full FOV to MNI
 ${FSLDIR}/bin/convert_xfm -omat "$WD"/full2std.mat -concat "$WD"/roi2std.mat "$WD"/full2roi.mat
@@ -111,8 +114,13 @@ ${FSLDIR}/bin/convert_xfm -omat "$WD"/full2std.mat -concat "$WD"/roi2std.mat "$W
 # Get a 6 DOF approximation which does the ACPC alignment (AC, ACPC line, and hemispheric plane)
 ${FSLDIR}/bin/aff2rigid "$WD"/full2std.mat "$OutputMatrix"
 
-# Create a resampled image (ACPC aligned) using spline interpolation
-${FSLDIR}/bin/applywarp --rel --interp=spline -i "$Input" -r "$Reference" --premat="$OutputMatrix" -o "$Output"
+# Resample the entire image and brain to ACPC space using spline interpolation
+${FSLDIR}/bin/applywarp --rel --interp=spline -i "$InputBrain" -r "$Reference" --premat="$OutputMatrix" -o "$OutputBrain"
+${FSLDIR}/bin/applywarp --rel --interp=spline -i "$InputImage" -r "$Reference" --premat="$OutputMatrix" -o "$OutputImage"
+
+# make png
+${FSLDIR}/bin/slicer $OutputBrain -x 0.5 "$WD"/aligncheck.png
+${FSLDIR}/bin/slicer $OutputImage -x 0.5 "$WD"/aligncheck.png
 
 log_Msg "END"
 echo " END: `date`" >> $WD/log.txt

@@ -359,21 +359,6 @@ for tXw in ${Modalities} ; do
     fi
 
     # ------------------------------------------------------------------------------
-    # ACPC align T1w image to specified MNI Template to create native volume space
-    # ------------------------------------------------------------------------------
-
-    echo -e "\n...Aligning T1w image to ${tXwTemplate} to create native volume space"
-    log_Msg "mkdir -p ${tXwFolder}/ACPCAlignment"
-    mkdir -p ${tXwFolder}/ACPCAlignment
-    ${RUN} ${RPP_Scripts}/ACPCAlignment.sh \
-        --workingDir=${tXwFolder}/ACPCAlignment \
-        --in=${tXwFolder}/${tXwImage} \
-        --ref=${tXwTemplate} \
-        --out=${tXwFolder}/${tXwImage}_acpc \
-        --oMat=${tXwFolder}/xfms/acpc.mat \
-        --brainSize=${brainSize}
-
-    # ------------------------------------------------------------------------------
     # Brain Extraction (FNIRT-based Masking)
     # ------------------------------------------------------------------------------
 
@@ -382,14 +367,32 @@ for tXw in ${Modalities} ; do
     mkdir -p ${tXwFolder}/BrainExtractionFNIRTbased
     ${RUN} ${RPP_Scripts}/BrainExtractionFNIRTbased.sh \
         --workingDir=${tXwFolder}/BrainExtractionFNIRTbased \
-        --in=${tXwFolder}/${tXwImage}_acpc \
+        --in=${tXwFolder}/${tXwImage} \
         --ref=${tXwTemplate} \
         --refMask=${tXwTemplateMask} \
         --ref2mm=${tXwTemplate2mm} \
         --ref2mmMask=${tXwTemplate2mmMask} \
-        --outBrain=${tXwFolder}/${tXwImage}_acpc_brain \
-        --outBrainMask=${tXwFolder}/${tXwImage}_acpc_brain_mask \
+        --outBrain=${tXwFolder}/${tXwImage}_brain \
+        --outBrainMask=${tXwFolder}/${tXwImage}_brain_mask \
         --FNIRTConfig=${FNIRTConfig}
+
+    # ------------------------------------------------------------------------------
+    # ACPC align image to specified MNI Template to create native volume space
+    # ------------------------------------------------------------------------------
+
+    echo -e "\n...Aligning ${tXwImage} image to ${tXwTemplate} to create native volume space"
+    log_Msg "mkdir -p ${tXwFolder}/ACPCAlignment"
+    mkdir -p ${tXwFolder}/ACPCAlignment
+    ${RUN} ${RPP_Scripts}/ACPCAlignment.sh \
+        --workingDir=${tXwFolder}/ACPCAlignment \
+        --inImage=${tXwFolder}/${tXwImage} \
+        --inBrain=${tXwFolder}/${tXwImage}_brain \
+        --ref=${tXwTemplate} \
+        --outImage=${tXwFolder}/${tXwImage}_acpc \
+        --outBrain=${tXwFolder}/${tXwImage}_acpc_brain \
+        --oMat=${tXwFolder}/xfms/acpc.mat \
+        --brainSize=${brainSize}
+
 
 done
 # End of looping over modalities (T1w and T2w)
