@@ -11,6 +11,15 @@ export DBNDIR=$(dirname "$(dirname "$(dirname "$DBNDIR")")")
 #export FSLDIR=/usr/local/fsl
 #source "$FSLDIR/etc/fslconf/fsl.sh"
 
+# Set up MATLAB (if not already done so in the running environment)
+# Uncomment the following 2 lines (remove the leading #) and correct the MATLABDIR setting for your setup
+#export MATLABDIR=/usr/local/MATLAB/R2020a/bin
+#export MATLABCMD=/usr/local/MATLAB/R2020a/bin/glnxa64/MATLAB
+
+# Set up SPM12 (if not already done so in the running environment)
+# Uncomment the following line (remove the leading #) and correct the SPM12DIR setting for your setup
+export SPM12DIR=$HOME/spm12
+
 export DBN_Libraries="${DBNDIR}/src/global/libs"
 # Location of the Registration based preprocessing pipeline
 export RPPDIR="${DBNDIR}/src/data/RPP"

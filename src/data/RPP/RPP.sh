@@ -19,6 +19,8 @@
 # ### Installed Software
 #
 # * [FSL][FSL] - FMRIB's Software Library (version 5.0.6)
+# * MATLAB
+# * SPM12
 #
 # ### Environment Variables
 #
@@ -32,6 +34,14 @@
 #
 #   Home directory for [FSL][FSL] the FMRIB Software Library from Oxford
 #   University
+#
+# * MATLABDIR
+#
+#   Home directory for MATLAB from
+#
+# * SPM12DIR
+#
+#   Home directory for SPM12 from
 #
 # ### Image Files
 #
@@ -110,6 +120,8 @@ log_Check_Env_Var DBN_Libraries
 log_Check_Env_Var RPPDIR
 log_Check_Env_Var RPP_Scripts
 log_Check_Env_Var FSLDIR
+log_Check_Env_Var MATLABDIR
+log_Check_Env_Var SPM12DIR
 
 # ------------------------------------------------------------------------------
 #  Usage Description Function
@@ -198,6 +210,7 @@ t2wTemplateMask=`opts_GetOpt1 "--t2TemplateMask" $@`
 t2wTemplate2mmMask=`opts_GetOpt1 "--t2Template2mmMask" $@`
 brainSize=`opts_GetOpt1 "--brainSize" $@`
 linear=`opts_GetOpt1 "--linear" $@`
+windowSize=`opts_GetOpt1 "--windowSize" $@`
 FNIRTConfig=`opts_GetOpt1 "--FNIRTConfig" $@`
 # Use --printcom=echo for just printing everything and not actually
 # running the commands (the default is to actually run the commands)
@@ -224,6 +237,7 @@ log_Msg "t2wTemplateMask: ${t2wTemplateMask}"
 log_Msg "t2wTemplate2mmMask: ${t2wTemplate2mmMask}"
 log_Msg "brainSize: ${brainSize}"
 log_Msg "linear: ${linear}"
+log_Msg "windowSize: ${windowSize}"
 log_Msg "FNIRTConfig: ${FNIRTConfig}"
 log_Msg "Finished Parsing Command Line Options"
 
@@ -233,6 +247,8 @@ log_Msg "Finished Parsing Command Line Options"
 
 echo -e "\nEnvironment Variables"
 log_Msg "FSLDIR: ${FSLDIR}"
+log_Msg "MATLABDIR: ${MATLABDIR}"
+log_Msg "SPM12DIR: ${SPM12DIR}"
 log_Msg "DBNDIR: ${DBNDIR}"
 log_Msg "DBN Libraries: ${DBN_Libraries}"
 log_Msg "RPPDIR: ${RPPDIR}"
@@ -263,9 +279,9 @@ if [ -z "${t2wInputImages}" ] ; then
     t2wFolder_t2wImageWithPath_acpc_brain="NONE"
     t1wFolder_t2wImageWithPath_acpc="NONE"
 else
-    t2wFolder_t2wImageWithPath_acpc="${t2wFolder}/${t2wImage}_acpc"
-    t2wFolder_t2wImageWithPath_acpc_brain="${t2wFolder}/${t2wImage}_acpc_brain"
-    t1wFolder_t2wImageWithPath_acpc="${t1wFolder}/${t2wImage}_acpc"
+    t2wFolder_t2wImageWithPath_acpc="${t2wFolder}/${t2wImage}_bc_acpc"
+    t2wFolder_t2wImageWithPath_acpc_brain="${t2wFolder}/${t2wImage}_bc_acpc_brain"
+    t1wFolder_t2wImageWithPath_acpc="${t1wFolder}/${t2wImage}_bc_acpc"
 fi
 
 if [ ! -e ${t1wFolder}/xfms ] ; then
@@ -329,8 +345,22 @@ for tXw in ${Modalities} ; do
     for image in $tXwInputImages ; do
         # reorient image to mach the orientation of MNI152
         ${RUN} ${FSLDIR}/bin/fslreorient2std $image ${tXwFolder}/${tXwImage}${i}
+
+        # ------------------------------------------------------------------------------
+        # Bias Correction
+        # ------------------------------------------------------------------------------
+
+        echo -e "\n...Performing Bias Correction"
+        log_Msg "mkdir -p ${tXwFolder}/BiasCorrection"
+        mkdir -p ${tXwFolder}/BiasCorrection
+        ${RUN} ${RPP_Scripts}/BiasCorrection.sh \
+            --workingDir=${tXwFolder}/BiasCorrection \
+            --inputImage=${tXwFolder}/${tXwImage} \
+            --windowSize=${windowSize} \
+            --outImage=${tXwFolder}/${tXwImage}_bc
+
         # always add the message/parameters specified
-        outputTXwImageString="${outputTXwImageString}${tXwFolder}/${tXwImage}${i}@"
+        outputTXwImageString="${outputTXwImageString}${tXwFolder}/${tXwImage}_bc${i}@"
         i=$(($i+1))
     done
 
@@ -349,13 +379,13 @@ for tXw in ${Modalities} ; do
             --ref=${tXwTemplate} \
             --refMask=${tXwTemplateMask} \
             --brainSize=${brainSize} \
-            --out=${tXwFolder}/${tXwImage} \
+            --out=${tXwFolder}/${tXwImage}_bc \
             --crop=no \
             --clean=no \
             --verbose=yes
     else
         log_Msg "Only one image found, not averaging T1w images, just copying"
-        ${RUN} ${FSLDIR}/bin/imcp ${tXwFolder}/${tXwImage}1 ${tXwFolder}/${tXwImage}
+        ${RUN} ${FSLDIR}/bin/imcp ${tXwFolder}/${tXwImage}_bc1 ${tXwFolder}/${tXwImage}_bc
     fi
 
     # ------------------------------------------------------------------------------
@@ -367,13 +397,13 @@ for tXw in ${Modalities} ; do
     mkdir -p ${tXwFolder}/BrainExtractionFNIRTbased
     ${RUN} ${RPP_Scripts}/BrainExtractionFNIRTbased.sh \
         --workingDir=${tXwFolder}/BrainExtractionFNIRTbased \
-        --in=${tXwFolder}/${tXwImage} \
+        --in=${tXwFolder}/${tXwImage}_bc \
         --ref=${tXwTemplate} \
         --refMask=${tXwTemplateMask} \
         --ref2mm=${tXwTemplate2mm} \
         --ref2mmMask=${tXwTemplate2mmMask} \
-        --outBrain=${tXwFolder}/${tXwImage}_brain \
-        --outBrainMask=${tXwFolder}/${tXwImage}_brain_mask \
+        --outBrain=${tXwFolder}/${tXwImage}_bc_brain \
+        --outBrainMask=${tXwFolder}/${tXwImage}_bc_brain_mask \
         --FNIRTConfig=${FNIRTConfig}
 
     # ------------------------------------------------------------------------------
@@ -385,11 +415,11 @@ for tXw in ${Modalities} ; do
     mkdir -p ${tXwFolder}/ACPCAlignment
     ${RUN} ${RPP_Scripts}/ACPCAlignment.sh \
         --workingDir=${tXwFolder}/ACPCAlignment \
-        --inImage=${tXwFolder}/${tXwImage} \
-        --inBrain=${tXwFolder}/${tXwImage}_brain \
+        --inImage=${tXwFolder}/${tXwImage}_bc \
+        --inBrain=${tXwFolder}/${tXwImage}_bc_brain \
         --ref=${tXwTemplate} \
-        --outImage=${tXwFolder}/${tXwImage}_acpc \
-        --outBrain=${tXwFolder}/${tXwImage}_acpc_brain \
+        --outImage=${tXwFolder}/${tXwImage}_bc_acpc \
+        --outBrain=${tXwFolder}/${tXwImage}_bc_acpc_brain \
         --oMat=${tXwFolder}/xfms/acpc.mat \
         --brainSize=${brainSize}
 
@@ -421,15 +451,15 @@ else
 
     ${RUN} ${RPP_Scripts}/T2wToT1wReg.sh \
         ${wdir} \
-        ${t1wFolder}/${t1wImage}_acpc \
-        ${t1wFolder}/${t1wImage}_acpc_brain \
+        ${t1wFolder}/${t1wImage}_bc_acpc \
+        ${t1wFolder}/${t1wImage}_bc_acpc_brain \
         ${t2wFolder_t2wImageWithPath_acpc} \
         ${t2wFolder_t2wImageWithPath_acpc_brain} \
-        ${t1wFolder}/${t1wImage}_acpc \
-        ${t1wFolder}/${t1wImage}_acpc_brain \
+        ${t1wFolder}/${t1wImage}_bc_acpc \
+        ${t1wFolder}/${t1wImage}_bc_acpc_brain \
         ${t1wFolder}/xfms/${t1wImage} \
-        ${t1wFolder}/${t2wImage}_acpc \
-        ${t1wFolder}/xfms/${t2wImage}_reg
+        ${t1wFolder}/${t2wImage}_bc_acpc \
+        ${t1wFolder}/xfms/${t2wImage}_bc_reg
 fi
 
 
@@ -444,15 +474,15 @@ if [ -z "${t2wInputImages}" ] ; then
     mkdir -p ${t1wFolder}/OneStepResampledACPC
     ${RUN} ${RPP_Scripts}/OneStepResampledACPC.sh \
         --workingDir=${t1wFolder}/OneStepResampledACPC \
-        --t1=${t1wFolder}/${t1wImage} \
-        --t1ACPC=${t1wFolder}/${t1wImage}_acpc \
-        --t1ACPCBrain=${t1wFolder}/${t1wImage}_acpc_brain \
+        --t1=${t1wFolder}/${t1wImage}_bc \
+        --t1ACPC=${t1wFolder}/${t1wImage}_bc_acpc \
+        --t1ACPCBrain=${t1wFolder}/${t1wImage}_bc_acpc_brain \
         --preMatT1=${t1wFolder}/xfms/acpc.mat \
         --T1w2T1w=${t1wFolder}/xfms/${t1wImage} \
         --ref=${t1wTemplate} \
         --oWarpT1=${t1wFolder}/xfms/origT1w2T1w \
-        --oT1=${t1wFolder}/${t1wImage}_acpc \
-        --oT1Brain=${t1wFolder}/${t1wImage}_acpc_brain
+        --oT1=${t1wFolder}/${t1wImage}_bc_acpc \
+        --oT1Brain=${t1wFolder}/${t1wImage}_bc_acpc_brain
 
 else
 
@@ -461,23 +491,23 @@ else
     mkdir -p ${t1wFolder}/OneStepResampledACPC
     ${RUN} ${RPP_Scripts}/OneStepResampledACPC.sh \
         --workingDir=${t1wFolder}/OneStepResampledACPC \
-        --t1=${t1wFolder}/${t1wImage} \
-        --t1ACPC=${t1wFolder}/${t1wImage}_acpc \
-        --t1ACPCBrain=${t1wFolder}/${t1wImage}_acpc_brain \
+        --t1=${t1wFolder}/${t1wImage}_bc \
+        --t1ACPC=${t1wFolder}/${t1wImage}_bc_acpc \
+        --t1ACPCBrain=${t1wFolder}/${t1wImage}_bc_acpc_brain \
         --preMatT1=${t1wFolder}/xfms/acpc.mat \
         --t1w2T1w=${t1wFolder}/xfms/${t1wImage} \
-        --t2=${t2wFolder}/${t2wImage} \
-        --t2ACPC=${t2wFolder}/${t2wImage}_acpc \
-        --t2ACPCBrain=${t2wFolder}/${t2wImage}_acpc_brain \
+        --t2=${t2wFolder}/${t2wImage}_bc \
+        --t2ACPC=${t2wFolder}/${t2wImage}_bc_acpc \
+        --t2ACPCBrain=${t2wFolder}/${t2wImage}_bc_acpc_brain \
         --preMatT2=${t2wFolder}/xfms/acpc.mat \
         --t2w2T1w=${t1wFolder}/xfms/${t2wImage}_reg \
         --ref=${t1wTemplate} \
         --oWarpT1=${t1wFolder}/xfms/origT1w2T1w \
-        --oT1=${t1wFolder}/${t1wImage}_acpc_final \
-        --oT1Brain=${t1wFolder}/${t1wImage}_acpc_brain_final \
+        --oT1=${t1wFolder}/${t1wImage}_bc_acpc_final \
+        --oT1Brain=${t1wFolder}/${t1wImage}_bc_acpc_brain_final \
         --oWarpT2=${t1wFolder}/xfms/origT2w2T1w \
-        --oT2=${t1wFolder}/${t2wImage}_acpc_final \
-        --oT2Brain=${t1wFolder}/${t2wImage}_acpc_brain_final
+        --oT2=${t1wFolder}/${t2wImage}_bc_acpc_final \
+        --oT2Brain=${t1wFolder}/${t2wImage}_bc_acpc_brain_final
 
 fi
 
@@ -506,8 +536,8 @@ if [ $linear = yes ] ; then
 
         ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRT.sh \
             --workingDir=${atlasSpaceFolder} \
-            --t1=${t1wFolder}/${t1wImage}_acpc_final \
-            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain_final \
+            --t1=${t1wFolder}/${t1wImage}_bc_acpc_final \
+            --t1Brain=${t1wFolder}/${t1wImage}_bc_acpc_brain_final \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
             --refMask=${templateMask} \
@@ -520,10 +550,10 @@ if [ $linear = yes ] ; then
 
         ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRT.sh \
             --workingDir=${atlasSpaceFolder} \
-            --t1=${t1wFolder}/${t1wImage}_acpc_final \
-            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain_final \
-            --t2=${t1wFolder}/${t2wImage}_acpc_final \
-            --t2Brain=${t1wFolder}/${t2wImage}_acpc_brain_final \
+            --t1=${t1wFolder}/${t1wImage}_bc_acpc_final \
+            --t1Brain=${t1wFolder}/${t1wImage}_bc_acpc_brain_final \
+            --t2=${t1wFolder}/${t2wImage}_bc_acpc_final \
+            --t2Brain=${t1wFolder}/${t2wImage}_bc_acpc_brain_final \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
             --refMask=${t1wTemplateMask} \
@@ -558,8 +588,8 @@ else
 
         ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRTandFNIRT.sh \
             --workingDir=${atlasSpaceFolder} \
-            --t1=${t1wFolder}/${t1wImage}_acpc_final \
-            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain_final \
+            --t1=${t1wFolder}/${t1wImage}_bc_acpc_final \
+            --t1Brain=${t1wFolder}/${t1wImage}_bc_acpc_brain_final \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
             --refMask=${t1wTemplateMask} \
@@ -575,10 +605,10 @@ else
 
         ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRTandFNIRT.sh \
             --workingDir=${atlasSpaceFolder} \
-            --t1=${t1wFolder}/${t1wImage}_acpc_final \
-            --t1Brain=${t1wFolder}/${t1wImage}_acpc_brain_final \
-            --t2=${t1wFolder}/${t2wImage}_acpc_final \
-            --t2Brain=${t1wFolder}/${t2wImage}_acpc_brain_final \
+            --t1=${t1wFolder}/${t1wImage}_bc_acpc_final \
+            --t1Brain=${t1wFolder}/${t1wImage}_bc_acpc_brain_final \
+            --t2=${t1wFolder}/${t2wImage}_bc_acpc_final \
+            --t2Brain=${t1wFolder}/${t2wImage}_bc_acpc_brain_final \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
             --refMask=${t1wTemplateMask} \
