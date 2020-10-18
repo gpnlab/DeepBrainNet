@@ -1,4 +1,4 @@
-#use 'source $RPPDIR/helpers/log.shlib "$@"' to log the full command line originally run on error or abort
+#use 'source $MPPDIR/helpers/log.shlib "$@"' to log the full command line originally run on error or abort
 if (($# > 0))
 then
 	log_FullCommand="$0 $*"

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - src/data/RPP/data.py Manage the data folder
 
+## [3.0.0] - 2020-10-18
+### Added
+
+### Changed
+
+### Removed
+
+### Fixed
+
 ## [2.0.0] - 2020-09-08
 ### Added
 - src/data/RPP/RPP_workstation.sh
@@ -131,8 +140,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-[Unreleased]:https://github.com/gpnlab/DeepBrainNet/compare/v1.2.0...HEAD
-[1.2.0]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v1.2.0
+[Unreleased]:https://github.com/gpnlab/DeepBrainNet/compare/v2.0.0...HEAD
+[3.0.0]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v3.0.0
+[2.0.0]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v1.3.0
+[1.3.0]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v1.2.0
 [1.1.0]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v1.1.0
 [1.0.0]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v1.0.0
 [0.0.1]:https://github.com/gpnlab/DeepBrainNet/releases/tag/v0.0.1

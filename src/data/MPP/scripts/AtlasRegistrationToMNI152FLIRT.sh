@@ -3,7 +3,7 @@ set -e
 
 # Requirements for this script
 #  installed versions of: FSL (version 5.0.6)
-#  environment: FSLDIR, DBN_Libraries, RPP_Config, MNI_Templates
+#  environment: FSLDIR, DBN_Libraries, MPP_Config, MNI_Templates
 
 # ------------------------------------------------------------------------------
 #  Verify required environment variables are set
@@ -23,11 +23,11 @@ if [ -z "${MNI_Templates}" ]; then
 #	echo "$(basename ${0}): MNI_Templates: ${MNI_Templates}"
 fi
 
-if [ -z "${RPP_Config}" ]; then
-	echo "$(basename ${0}): ABORTING: RPP_Config environment variable must be set"
+if [ -z "${MPP_Config}" ]; then
+	echo "$(basename ${0}): ABORTING: MPP_Config environment variable must be set"
 	exit 1
 #else
-#	echo "$(basename ${0}): RPP_Config: ${RPP_Config}"
+#	echo "$(basename ${0}): MPP_Config: ${MPP_Config}"
 fi
 
 if [ -z "${FSLDIR}" ]; then
@@ -51,8 +51,8 @@ Usage() {
   echo "                --ref=<reference image>"
   echo "                --refBrain=<reference brain image>"
   echo "                --refMask=<reference brain mask>"
-  echo "                --oMat=<output warp>"
-  echo "                --oInvMat=<output inverse warp>"
+  echo "                --oWarp=<output warp>"
+  echo "                --oInvWarp=<output inverse warp>"
   echo "                --oT1=<output t1w to MNI>"
   echo "                --oT1Brain=<output, brain extracted t1w to MNI>"
 }
@@ -79,17 +79,21 @@ if [ $# -lt 9 ] ; then Usage; exit 1; fi
 WD=`opts_GetOpt1 "--workingDir" $@`  # "$1"
 T1w=`opts_GetOpt1 "--t1" $@`  # "$2"
 T1wBrain=`opts_GetOpt1 "--t1Brain" $@`  # "$3"
+T1wBrainMask=`opts_GetOpt1 "--t1BrainMask" $@`  # "$3"
 T2w=`opts_GetOpt1 "--t2" $@`  # "$2"
 T2wBrain=`opts_GetOpt1 "--t2Brain" $@`  # "$3"
+T2wBrainMask=`opts_GetOpt1 "--t2BrainMask" $@`  # "$3"
 Reference=`opts_GetOpt1 "--ref" $@`  # "$4"
 ReferenceBrain=`opts_GetOpt1 "--refBrain" $@`  # "$5"
 ReferenceMask=`opts_GetOpt1 "--refMask" $@`  # "$6
-OutputTransform=`opts_GetOpt1 "--oMat" $@`  # "$9"
-OutputInvTransform=`opts_GetOpt1 "--oInvMat" $@`  # "$10"
+OutputTransform=`opts_GetOpt1 "--oWarp" $@`  # "$9"
+OutputInvTransform=`opts_GetOpt1 "--oInvWarp" $@`  # "$10"
 OutputT1wImage=`opts_GetOpt1 "--oT1" $@`  # "$11"
 OutputT1wImageBrain=`opts_GetOpt1 "--oT1Brain" $@`  # "$12"
+OutputT1wImageBrainMask=`opts_GetOpt1 "--oT1BrainMask" $@`  # "$12"
 OutputT2wImage=`opts_GetOpt1 "--oT2" $@`  # "$11"
 OutputT2wImageBrain=`opts_GetOpt1 "--oT2Brain" $@`  # "$12"
+OutputT2wImageBrainMask=`opts_GetOpt1 "--oT2BrainMask" $@`  # "$12"
 
 # default parameters
 WD=`opts_DefaultOpt $WD .`
@@ -117,20 +121,30 @@ echo " " >> $WD/xfms/log.txt
 
 # Linear then non-linear registration to MNI
 ${FSLDIR}/bin/flirt -interp spline -dof 12 -in ${T1wBrain} -ref ${ReferenceBrain} -omat ${OutputTransform} -out ${OutputT1wImageBrain}
+${FSLDIR}/bin/fslmaths "$OutputT1wImageBrain" -abs "$OutputT1wImageBrain" -odt float
 
 # Invert affine transform
 ${FSLDIR}/bin/convert_xfm -omat ${OutputInvTransform} -inverse ${OutputTransform}
 
 # T1w set of transformed outputs (brain/whole-head + orig)
 ${FSLDIR}/bin/flirt -in ${T1w} -ref ${Reference} -out ${OutputT1wImage} -init ${OutputTransform} -applyxfm
-${FSLDIR}/bin/flirt -in ${T1wBrain} -ref ${Reference} -out ${OutputT1wImageBrain} -init ${OutputTransform} -applyxfm
-${FSLDIR}/bin/fslmaths ${OutputT1wImage} -mas ${OutputT1wImageBrain} ${OutputT1wImageBrain}
+#${FSLDIR}/bin/flirt -in ${T1wBrain} -ref ${Reference} -out ${OutputT1wImageBrain} -init ${OutputTransform} -applyxfm
+#${FSLDIR}/bin/fslmaths ${OutputT1wImage} -mas ${OutputT1wImageBrain} ${OutputT1wImageBrain}
+${FSLDIR}/bin/fslmaths "$OutputT1wImage" -abs "$OutputT1wImage" -odt float
+
+${FSLDIR}/bin/flirt -in ${T1wBrainMask} -ref ${Reference} -out ${OutputT1wImageBrainMask} -init ${OutputTransform} -applyxfm
+${FSLDIR}/bin/fslmaths "$OutputT1wImageBrainMask" -abs "$OutputT1wImageBrainMask" -odt float
 
 # T2w set of warped outputs(brain/whole-head + orig)
 if [ -n "${T2w}" ] ; then
     ${FSLDIR}/bin/flirt -in ${T2w} -ref ${Reference} -out ${OutputT2wImage} -init ${OutputTransform} -applyxfm
+    ${FSLDIR}/bin/fslmaths "$OutputT2wImage" -abs "$OutputT2wImage" -odt float
+
     ${FSLDIR}/bin/flirt -in ${T2wBrain} -ref ${Reference} -out ${OutputT2wImageBrain} -init ${OutputTransform} -applyxfm
-    ${FSLDIR}/bin/fslmaths ${OutputT2wImage} -mas ${OutputT2wImageBrain} ${OutputT2wImageBrain}
+    ${FSLDIR}/bin/fslmaths "$OutputT2wImageBrain" -abs "$OutputT2wImageBrain" -odt float
+    #${FSLDIR}/bin/fslmaths ${OutputT2wImage} -mas ${OutputT2wImageBrain} ${OutputT2wImageBrain}
+    ${FSLDIR}/bin/flirt -in ${T2wBrainMask} -ref ${Reference} -out ${OutputT2wImageBrainMask} -init ${OutputTransform} -applyxfm
+    ${FSLDIR}/bin/fslmaths "$OutputT2wImageBrainMask" -abs "$OutputT2wImageBrainMask" -odt float
 fi
 
 log_Msg "END: Linear AtlasRegistration to MNI152"

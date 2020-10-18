@@ -57,15 +57,16 @@ function main()
     opts_AddMandatory '--t1' 'T1w' 'Input T1w' "a required value; input T1w image"
     opts_AddMandatory '--t1ACPC' 'T1wACPC' 'Input T1w ACPC image' "a required value; input T1w ACPC aligned image"
     opts_AddMandatory '--t1ACPCBrain' 'T1wACPCBrain' 'Input T1w ACPC Brain' "a required value; input T1w ACPC aligned, brain extracted image"
+    opts_AddMandatory '--t1w2ACPC' 'T1w2ACPC' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T1w orign space with the ACPC line"
+    opts_AddMandatory '--t1w2T1w' 'T1w2T1w' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T1w orign space with the ACPC line"
+    opts_AddOptional '--fullT1w2roi' 'fullT1w2roi' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T2w orign space with the ACPC line" ""
     opts_AddOptional '--t2' 'T2w' 'Input T2w' "a required value; input T2w image" ""
     opts_AddOptional '--t2ACPC' 'T2wACPC' 'Input T2w ACPC image' "a required value; input T2w ACPC aligned image" ""
     opts_AddOptional '--t2ACPCBrain' 'T2wACPCBrain' 'Input T2w ACPC Brain' "a required value; input T2w ACPC aligned, brain extracted image" ""
-    opts_AddMandatory '--ref' 'Reference' 'MNI T1w Template' "a required value; MNI T1w Template"
-    opts_AddOptional '--iWarp' 'T2wToT1w' 'warp transform' "specifies the non-linear warp that should be applied to the T2w to co-register it to T1w prior to warping so it aligns with the ACPC line"  ""
-    opts_AddMandatory '--preMatT1' 'PreMatT1' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T1w orign space with the ACPC line"
-    opts_AddOptional '--preMatT2' 'PreMatT2' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T2w orign space with the ACPC line" ""
-    opts_AddMandatory '--t1w2T1w' 'T1w2T1w' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T1w orign space with the ACPC line"
+    opts_AddOptional '--t2w2ACPC' 'T2w2ACPC' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T2w orign space with the ACPC line" ""
     opts_AddOptional '--t2w2T1w' 'T2w2T1w' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T2w orign space with the ACPC line" ""
+    opts_AddOptional '--fullT2w2roi' 'fullT2w2roi' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T2w orign space with the ACPC line" ""
+    opts_AddMandatory '--ref' 'Reference' 'MNI T1w Template' "a required value; MNI T1w Template"
     opts_AddMandatory '--oWarpT1' 'origT1w2T1w' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T1w orign space with the ACPC line"
     opts_AddOptional '--oWarpT2' 'origT2w2T1w' 'Affine transform' "a required value; specifies the affine transform that should be applied to the data prior to the non-linear warping. Aligns the T2w orign space with the ACPC line" ""
     opts_AddMandatory '--oT1' 'OutputT1wImage' 'Resampled T1w ACPC aligned image' "a required value; T1w ACPC aligned image warped into the MNI space"
@@ -91,7 +92,8 @@ function main()
 
     log_Msg "START: One-set resampled version of T1w_acpc output"
 
-    convertwarp --relout --rel --ref=${Reference} --premat=${PreMatT1} --warp1=${T1w2T1w} --out=${origT1w2T1w}
+    #convertwarp --relout --rel --ref=${Reference} --premat=${PreMatT1} --warp1=${T1w2T1w} --out=${origT1w2T1w}
+    convertwarp --relout --rel --ref=${Reference} --premat=${fullT1w2roi} --warp1=${T1w2T1w} --postmat=${T1w2ACPC} --out=${origT1w2T1w}
     applywarp --rel --interp=spline --in=${T1w} --ref=${Reference} --warp=${origT1w2T1w} --out=${OutputT1wImage}
 
     # Use -abs (rather than '-thr 0') to avoid introducing zeros
@@ -108,7 +110,9 @@ function main()
     if [ -n "${T2w}" ] ; then
         log_Msg "START: One-set resampled version of T2w_acpc output"
 
-        convertwarp --relout --rel --ref=${Reference} --premat=${PreMatT2} --warp1=${T2w2T1w} --out=${origT2w2T1w}
+        #convertwarp --relout --rel --ref=${Reference} --premat=${PreMatT2} --warp1=${T2w2T1w} --out=${origT2w2T1w}
+        convertwarp --relout --rel --ref=${Reference} --premat=${fullT2w2roi} --warp1=${T2w2T1w} --postmat=${T2w2ACPC} --out=${origT2w2T1w}
+        #convertwarp --relout --rel --ref=${Reference} --postmat=${PreMatT1} --warp1=${T2w2T1w} --out=${origT2w2T1w}
         applywarp --rel --interp=spline --in=${T2w} --ref=${Reference} --warp=${origT2w2T1w} --out=${OutputT2wImage}
 
         # Use -abs (rather than '-thr 0') to avoid introducing zeros

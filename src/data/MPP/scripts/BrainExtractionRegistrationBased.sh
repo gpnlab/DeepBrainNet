@@ -3,7 +3,7 @@ set -e
 
 # Requirements for this script
 #  installed versions of: FSL (version 5.0.6)
-#  environment: FSLDIR, MNI_Templates, DBN_Libraries, and RPP_Config
+#  environment: FSLDIR, MNI_Templates, DBN_Libraries, and MPP_Config
 
 
 # ------------------------------------------------------------------------------
@@ -24,11 +24,11 @@ else
 	echo "$(basename ${0}): MNI_Templates: ${MNI_Templates}"
 fi
 
-if [ -z "${RPP_Config}" ]; then
-	echo "$(basename ${0}): ABORTING: RPP_Config environment variable must be set"
+if [ -z "${MPP_Config}" ]; then
+	echo "$(basename ${0}): ABORTING: MPP_Config environment variable must be set"
 	exit 1
 else
-	echo "$(basename ${0}): RPP_Config: ${RPP_Config}"
+	echo "$(basename ${0}): MPP_Config: ${MPP_Config}"
 fi
 
 if [ -z "${DBN_Libraries}" ]; then
@@ -88,6 +88,7 @@ Reference=`getopt1 "--ref" $@` # "$3"
 ReferenceMask=`getopt1 "--refMask" $@` # "$4"
 Reference2mm=`getopt1 "--ref2mm" $@` # "$5"
 Reference2mmMask=`getopt1 "--ref2mmMask" $@` # "$6"
+OutputImage=`getopt1 "--outImage" $@`
 OutputBrainExtractedImage=`getopt1 "--outBrain" $@` # "$7"
 OutputBrainMask=`getopt1 "--outBrainMask" $@` # "$8"
 FNIRTConfig=`getopt1 "--FNIRTConfig" $@` # "$9"
@@ -98,7 +99,7 @@ FNIRTConfig=`getopt1 "--FNIRTConfig" $@` # "$9"
 #ReferenceMask=`defaultopt $ReferenceMask ${MNI_Templates}/MNI152_T1_0.7mm_brain_mask.nii.gz`  # dilate to be conservative with final brain mask
 #Reference2mm=`defaultopt $Reference2mm ${MNI_Templates}/MNI152_T1_2mm.nii.gz`
 #Reference2mmMask=`defaultopt $Reference2mmMask ${MNI_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz`  # dilate to be conservative with final brain mask
-#FNIRTConfig=`defaultopt $FNIRTConfig ${RPP_Config}/T1_2_MNI152_2mm.cnf`
+#FNIRTConfig=`defaultopt $FNIRTConfig ${MPP_Config}/T1_2_MNI152_2mm.cnf`
 
 BaseName=`${FSLDIR}/bin/remove_ext $Input`;
 BaseName=`basename $BaseName`;
@@ -115,19 +116,33 @@ echo " " >> $WD/log.txt
 
 ########################################## DO WORK ##########################################
 
+# Crop the FOV
+${FSLDIR}/bin/robustfov -i "$Input" -m "$WD"/roi2full.mat -r "$WD"/robustroi.nii.gz $BrainSizeOpt
+
+# Invert the matrix (to get full FOV to ROI)
+${FSLDIR}/bin/convert_xfm -omat "$WD"/full2roi.mat -inverse "$WD"/roi2full.mat
 
 # Register to 2mm reference image (linear then non-linear)
-${FSLDIR}/bin/flirt -interp spline -dof 12 -in "$Input" -ref "$Reference2mm" -omat "$WD"/roughlin.mat -out "$WD"/"$BaseName"_to_MNI_roughlin.nii.gz -nosearch
-${FSLDIR}/bin/fnirt --in="$Input" --ref="$Reference2mm" --aff="$WD"/roughlin.mat --refmask="$Reference2mmMask" --fout="$WD"/str2standard.nii.gz --jout="$WD"/NonlinearRegJacobians.nii.gz --refout="$WD"/IntensityModulatedT1.nii.gz --iout="$WD"/"$BaseName"_to_MNI_nonlin.nii.gz --logout="$WD"/NonlinearReg.txt --intout="$WD"/NonlinearIntensities.nii.gz --cout="$WD"/NonlinearReg.nii.gz --config="$FNIRTConfig"
+${FSLDIR}/bin/flirt -interp spline -dof 12 -in "$WD"/robustroi.nii.gz -ref "$Reference2mm" -omat "$WD"/roughlin.mat -out "$WD"/"$BaseName"_to_MNI_roughlin.nii.gz -nosearch
+
+${FSLDIR}/bin/fnirt --in="$WD"/robustroi.nii.gz --ref="$Reference2mm" --aff="$WD"/roughlin.mat --refmask="$Reference2mmMask" --fout="$WD"/str2standard.nii.gz --jout="$WD"/NonlinearRegJacobians.nii.gz --refout="$WD"/IntensityModulatedT1.nii.gz --iout="$WD"/"$BaseName"_to_MNI_nonlin.nii.gz --logout="$WD"/NonlinearReg.txt --intout="$WD"/NonlinearIntensities.nii.gz --cout="$WD"/NonlinearReg.nii.gz --config="$FNIRTConfig"
 
 # Overwrite the image output from FNIRT with a spline interpolated highres version
-${FSLDIR}/bin/applywarp --rel --interp=spline --in="$Input" --ref="$Reference" -w "$WD"/str2standard.nii.gz --out="$WD"/"$BaseName"_to_MNI_nonlin.nii.gz
+${FSLDIR}/bin/applywarp --rel --interp=spline --in="$WD"/robustroi.nii.gz --ref="$Reference" -w "$WD"/str2standard.nii.gz --out="$WD"/"$BaseName"_to_MNI_nonlin.nii.gz
 
 # Invert warp and transform dilated brain mask back into native space, and use it to mask input image
 # Input and reference spaces are the same, using 2mm reference to save time
 ${FSLDIR}/bin/invwarp --ref="$Reference2mm" -w "$WD"/str2standard.nii.gz -o "$WD"/standard2str.nii.gz
-${FSLDIR}/bin/applywarp --rel --interp=nn --in="$ReferenceMask" --ref="$Input" -w "$WD"/standard2str.nii.gz -o "$OutputBrainMask"
-${FSLDIR}/bin/fslmaths "$Input" -mas "$OutputBrainMask" "$OutputBrainExtractedImage"
+
+${FSLDIR}/bin/applywarp --rel --interp=nn --in="$ReferenceMask" --ref="$WD"/robustroi.nii.gz -w "$WD"/standard2str.nii.gz -o "$OutputBrainMask"
+${FSLDIR}/bin/fslmaths "$WD"/robustroi.nii.gz -mas "$OutputBrainMask" "$OutputBrainExtractedImage"
+
+
+${FSLDIR}/bin/fslmaths "$OutputBrainExtractedImage" -abs "$OutputBrainExtractedImage" -odt float
+
+# Overwrite ${tXwFolder}/${tXwImage}_bc with the cropped version
+${FSLDIR}/bin/imcp "$WD"/robustroi.nii.gz ${OutputImage}
+
 
 log_Msg "END: BrainExtraction_FNIRT"
 echo " END: `date`" >> $WD/log.txt

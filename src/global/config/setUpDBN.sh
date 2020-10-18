@@ -12,9 +12,8 @@ export DBNDIR=$(dirname "$(dirname "$(dirname "$DBNDIR")")")
 #source "$FSLDIR/etc/fslconf/fsl.sh"
 
 # Set up MATLAB (if not already done so in the running environment)
-# Uncomment the following 2 lines (remove the leading #) and correct the MATLABDIR setting for your setup
-#export MATLABDIR=/usr/local/MATLAB/R2020a/bin
-#export MATLABCMD=/usr/local/MATLAB/R2020a/bin/glnxa64/MATLAB
+# Uncomment the following line (remove the leading #) and correct the MATLABDIR setting for your setup
+export MATLABDIR=/usr/local/bin/matlab
 
 # Set up SPM12 (if not already done so in the running environment)
 # Uncomment the following line (remove the leading #) and correct the SPM12DIR setting for your setup
@@ -22,7 +21,7 @@ export SPM12DIR=$HOME/spm12
 
 export DBN_Libraries="${DBNDIR}/src/global/libs"
 # Location of the Registration based preprocessing pipeline
-export RPPDIR="${DBNDIR}/src/data/RPP"
+export MPPDIR="${DBNDIR}/src/data/MPP"
 # Location of the application directory
 export APPDIR="${DBNDIR}/src/app"
 # Path to the MNI templates
@@ -64,5 +63,3 @@ export LC_ALL=C
 export LANGUAGE=C
 #POSIXLY_CORRECT currently gets set by many versions of fsl_sub, unfortunately, but at least don't pass it in if the user has it set in their usual environment
 unset POSIXLY_CORRECT
-
-# Location of bash libraries that hold helper functions for DBN shell scripts

@@ -4,7 +4,7 @@ set -eu
 
 # Requirements for this script
 #  installed versions of: MATLAB, SPM12
-#  environment: SPM12DIR, MATLABDIR, DBN_Libraries, RPP_Scripts
+#  environment: SPM12DIR, MATLABDIR, DBN_Libraries, MPP_Scripts
 
 
 # ------------------------------------------------------------------------------
@@ -25,11 +25,11 @@ else
 	echo "$(basename ${0}): SPM12DIR: ${SPM12DIR}"
 fi
 
-if [ -z "${RPP_Scripts}" ]; then
-	echo "$(basename ${0}): ABORTING: RPP_Scripts environment variable must be set"
+if [ -z "${MPP_Scripts}" ]; then
+	echo "$(basename ${0}): ABORTING: MPP_Scripts environment variable must be set"
 	exit 1
 else
-	echo "$(basename ${0}): RPP_Scripts: ${RPP_Scripts}"
+	echo "$(basename ${0}): MPP_Scripts: ${MPP_Scripts}"
 fi
 
 if [ -z "${DBN_Libraries}" ]; then
@@ -67,9 +67,11 @@ Values default to running the example with sample data
 function main()
 {
     opts_AddOptional '--workingDir' 'WD' 'Working Directory' "an optional value; directory to save byproducts" "."
-    opts_AddMandatory '--image' 'InputImage' 'Input Image' "a required value; input image"
-    opts_AddOptional '--windowSize' 'windowSize' 'size of the window' "an optional value; size of the window; 7T MRI usually uses smaller window. Between 20 and 30 should give good results." "30"
-    opts_AddMandatory '--output' 'OutputImage' 'Bias corrected image' "a required value; Bias corrected image"
+    opts_AddMandatory '--segmentationDir' 'SD' 'Segmentation Directory' "a required value; directory with segmentation contrasts"
+    opts_AddMandatory '--in' 'InputImage' 'Input Image' "a required value; input image"
+    opts_AddMandatory '--outImage' 'OutputImage' 'Bias corrected image' "a required value; Bias corrected image"
+    opts_AddMandatory '--outBrain' 'OutputBrain' 'Bias corrected image' "a required value; Bias corrected image"
+    opts_AddMandatory '--outBrainMask' 'OutputBrainMask' 'Bias corrected image' "a required value; Bias corrected image"
     opts_ParseArguments "$@"
 
     #display the parsed/default values
@@ -87,17 +89,41 @@ function main()
     # Create a Bias Corrected Version of the Input
     # ------------------------------------------------------------------------------
 
-    log_Msg "START: Bias correction"
+    log_Msg "START: Brain Extraction Segmentation-based"
 
     BaseName=`${FSLDIR}/bin/remove_ext $InputImage`;
     BaseName=`basename $BaseName`;
 
-    cp $InputImage "$WD"
-    gzip -d "$WD"/$InputImage
+    $FSLDIR/bin/imcp $InputImage "$WD"/$BaseName
+    gzip -d "$WD"/$BaseName.nii.gz
 
-    ${MATLABDIR} -nodesktop -nosplash -r "addpath('${RPP_Scripts}'); BiasCorrection('"$WD"/$Basename.nii', '$SPM12DIR', '$windowSize'); exit"
+    ${MATLABDIR} -nodesktop -nosplash -r "addpath('${MPP_Scripts}'); BrainExtractionSegmentationBased('$SPM12DIR', '"$WD"', '"$BaseName"'); exit"
 
-    gzip "$WD"/m$BaseName.nii
-    mv "$WD"/m$Basename.nii.gz $OutputImage
-    rm "$WD"/$InputImage
+    gzip "$WD"/brain_mask_$BaseName.nii
 
+    ${FSLDIR}/bin/fslmaths "$InputImage" -mas "$WD"/brain_mask_$BaseName.nii.gz "$OutputBrain"
+
+    ${FSLDIR}/bin/fslmaths "$OutputBrain" -abs "$OutputBrain" -odt float
+
+    #${FSLDIR}/bin/imcp $InputImage $OutputImage
+
+    ${FSLDIR}/bin/imcp "$WD"/brain_mask_$BaseName.nii.gz $OutputBrainMask
+
+    rm "$WD"/$BaseName.nii
+    rm "$WD"/brain_mask_$BaseName.nii.gz
+    rm "$WD"/m$BaseName.nii
+
+    log_Msg "END: Brain Extraction Segmentation-based"
+
+    # ------------------------------------------------------------------------------
+    # QA STUFF
+    # ------------------------------------------------------------------------------
+    echo " END: `date`" >> $WD/log.txt
+
+    if [ -e $WD/qa.txt ] ; then rm -f $WD/qa.txt ; fi
+    echo "cd `pwd`" >> $WD/qa.txt
+    echo "# Check quality of alignment with MNI image" >> $WD/qa.txt
+    echo "fsleyes ${InputImage} ${OutputImage}" >> $WD/qa.txt
+}
+
+main "$@"

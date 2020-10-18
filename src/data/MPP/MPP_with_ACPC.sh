@@ -161,6 +161,20 @@ show_usage() {
   --template2mmMask=<file path>     Brain mask MNI 2mm Template
   --brainSize=<size value>          Brain size estimate in mm, 150 for humans
   --linear=<yes/no>                 Do (not) use FNIRT for image registration to MNI
+  [--custombrain=(NONE|MASK|CUSTOM)]  If you have created a custom brain mask saved as "<subject>/T1w/custom_acpc_mask.nii.gz", specify "MASK".
+                                      If you have created custom structural images, e.g.:
+                                      - "<subject>/T1w/T1w_acpc_brain_final.nii.gz"
+                                      - "<subject>/T1w/T1w_acpc_final.nii.gz"
+                                      - "<subject>/T1w/T2w_acpc_brain_final.nii.gz"
+                                      - "<subject>/T1w/T2w_acpc_final.nii.gz"
+                                      to be used when peforming MNI152 Atlas registration, specify "CUSTOM".
+                                      When "MASK" or "CUSTOM" is specified, only the AtlasRegistration step is run.
+                                      If the parameter is omitted or set to NONE (the default),
+                                      standard image processing will take place.
+                                      NOTE: This option allows manual correction of brain images in cases when they
+                                      were not successfully processed and/or masked by the regular use of the pipelines.
+                                      Before using this option, first ensure that the pipeline arguments used were
+                                      correct and that templates are a good match to the data.
   --FNIRTConfig=<file path>         FNIRT 2mm T1w Configuration file
 
 EOF
@@ -209,6 +223,7 @@ Template2mmMask=`opts_GetOpt1 "--template2mmMask" $@`
 brainSize=`opts_GetOpt1 "--brainSize" $@`
 linear=`opts_GetOpt1 "--linear" $@`
 windowSize=`opts_GetOpt1 "--windowSize" $@`
+customBrain=`opts_GetOpt1 "--customBrain" $@`
 FNIRTConfig=`opts_GetOpt1 "--FNIRTConfig" $@`
 # Use --printcom=echo for just printing everything and not actually
 # running the commands (the default is to actually run the commands)
@@ -234,6 +249,7 @@ log_Msg "Template2mmMask: ${Template2mmMask}"
 log_Msg "brainSize: ${brainSize}"
 log_Msg "linear: ${linear}"
 log_Msg "windowSize: ${windowSize}"
+log_Msg "customBrain: ${customBrain}"
 log_Msg "FNIRTConfig: ${FNIRTConfig}"
 log_Msg "Finished Parsing Command Line Options"
 
@@ -271,13 +287,14 @@ t2wInputImages=`echo ${t2wInputImages} | sed 's/@/ /g'`
 
 # Are T2w images available?
 if [ -z "${t2wInputImages}" ] ; then
-    t2wFolder_t2wImageWithPath_acpc="NONE"
-    t2wFolder_t2wImageWithPath_acpc_brain="NONE"
+    t2wFolder_t2wImageWithPath="NONE"
+    t2wFolder_t2wImageWithPath_brain="NONE"
     t1wFolder_t2wImageWithPath_acpc="NONE"
 else
-    t2wFolder_t2wImageWithPath_acpc="${t2wFolder}/${t2wImage}_bc_acpc"
-    t2wFolder_t2wImageWithPath_acpc_brain="${t2wFolder}/${t2wImage}_bc_acpc_brain"
-    t1wFolder_t2wImageWithPath_acpc="${t1wFolder}/${t2wImage}_bc_acpc"
+    t2wFolder_t2wImageWithPath="${t2wFolder}/${t2wImage}_bc_fov"
+    t2wFolder_t2wImageWithPath_brain="${t2wFolder}/${t2wImage}_bc_fov_brain"
+    t2wFolder_t2wImageWithPath_brain_mask="${t2wFolder}/${t2wImage}_bc_fov_brain_mask"
+    t1wFolder_t2wImageWithPath_acpc="${t1wFolder}/${t2wImage}_bc_fov_acpc"
 fi
 
 if [ ! -e ${t1wFolder}/xfms ] ; then
@@ -292,6 +309,13 @@ if [[ ! -e ${t2wFolder}/xfms ]] && [[ -n ${t2wInputImages} ]] ; then
 fi
 
 # ------------------------------------------------------------------------------
+# We skip all the way to AtlasRegistration (last step) if using a custom brain
+# mask or custom structural images ($customImage={MASK|CUSTOM})
+# ------------------------------------------------------------------------------
+
+if [ "$customBrain" = "NONE" ] ; then
+
+# ------------------------------------------------------------------------------
 #  Do primary work
 # ------------------------------------------------------------------------------
 
@@ -303,209 +327,276 @@ fi
 #  - Perform Brain Extraction (FNIRT-based Masking)
 # ------------------------------------------------------------------------------
 
-Modalities="T1w T2w"
+    Modalities="T1w T2w"
 
-for tXw in ${Modalities} ; do
-    # Set up appropriate input variables
-    if [ $tXw = T1w ] ; then
-        tXwInputImages="${t1wInputImages}"
-        tXwFolder="${t1wFolder}"
-        tXwImage="${t1wImage}"
-        tXwTemplate="${t1wTemplate}"
-        tXwTemplate2mm="${t1wTemplate2mm}"
-    else
-        tXwInputImages="${t2wInputImages}"
-        tXwFolder="${t2wFolder}"
-        tXwImage="${t2wImage}"
-        tXwTemplate="${t2wTemplate}"
-        tXwTemplate2mm="${t2wTemplate2mm}"
-    fi
-    outputTXwImageString=""
+    for tXw in ${Modalities} ; do
+        # Set up appropriate input variables
+        if [ $tXw = T1w ] ; then
+            tXwInputImages="${t1wInputImages}"
+            tXwFolder="${t1wFolder}"
+            tXwImage="${t1wImage}"
+            tXwTemplate="${t1wTemplate}"
+            tXwTemplateBrain="${t1wTemplateBrain}"
+            tXwTemplate2mm="${t1wTemplate2mm}"
+        else
+            tXwInputImages="${t2wInputImages}"
+            tXwFolder="${t2wFolder}"
+            tXwImage="${t2wImage}"
+            tXwTemplate="${t2wTemplate}"
+            tXwTemplateBrain="${t2wTemplateBrain}"
+            tXwTemplate2mm="${t2wTemplate2mm}"
+        fi
+        outputTXwImageString=""
 
-    # Skip modality if no image
-    if [ -z "${tXwInputImages}" ] ; then
-        echo ''
-        log_Msg "Skipping Modality: $tXw - image not specified"
-        echo ''
-        continue
-    else
-        echo ''
-        log_Msg "Processing Modality: $tXw"
-    fi
+        # Skip modality if no image
+        if [ -z "${tXwInputImages}" ] ; then
+            echo ''
+            log_Msg "Skipping Modality: $tXw - image not specified"
+            echo ''
+            continue
+        else
+            echo ''
+            log_Msg "Processing Modality: $tXw"
+        fi
 
-    i=1
-    for image in $tXwInputImages ; do
-        # reorient image to mach the orientation of MNI152
-        ${RUN} ${FSLDIR}/bin/fslreorient2std $image ${tXwFolder}/${tXwImage}${i}
+        i=1
+        for image in $tXwInputImages ; do
+            # reorient image to mach the orientation of MNI152
+            ${RUN} ${FSLDIR}/bin/fslreorient2std $image ${tXwFolder}/${tXwImage}${i}
+
+            # ------------------------------------------------------------------------------
+            # Bias Correction
+            # ------------------------------------------------------------------------------
+            # bc stands for bias corrected
+
+            echo -e "\n...Performing Bias Correction"
+            log_Msg "mkdir -p ${tXwFolder}/BiasCorrection"
+            mkdir -p ${tXwFolder}/BiasCorrection
+            ${RUN} ${RPP_Scripts}/BiasCorrection.sh \
+                --workingDir=${tXwFolder}/BiasCorrection \
+                --inputImage=${tXwFolder}/${tXwImage}${i} \
+                --windowSize=${windowSize} \
+                --outputImage=${tXwFolder}/${tXwImage}_bc${i}
+
+            # always add the message/parameters specified
+            outputTXwImageString="${outputTXwImageString}${tXwFolder}/${tXwImage}_bc${i}@"
+            i=$(($i+1))
+        done
 
         # ------------------------------------------------------------------------------
-        # Bias Correction
+        # Average Like (Same Modality) Scans
         # ------------------------------------------------------------------------------
 
-        echo -e "\n...Performing Bias Correction"
-        log_Msg "mkdir -p ${tXwFolder}/BiasCorrection"
-        mkdir -p ${tXwFolder}/BiasCorrection
-        ${RUN} ${RPP_Scripts}/BiasCorrection.sh \
-            --workingDir=${tXwFolder}/BiasCorrection \
-            --inputImage=${tXwFolder}/${tXwImage} \
-            --windowSize=${windowSize} \
-            --outImage=${tXwFolder}/${tXwImage}_bc
+        echo -e "\n...Averaging ${tXw} Scans"
+        if [ `echo $tXwInputImages | wc -w` -gt 1 ] ; then
+            log_Msg "Averaging ${tXw} Images, performing simple averaging"
+            log_Msg "mkdir -p ${tXwFolder}/Average${tXw}Images"
+            mkdir -p ${tXwFolder}/Average${tXw}Images
+            ${RUN} ${RPP_Scripts}/AnatomicalAverage.sh \
+                --workingDir=${tXwFolder}/Average${tXw}Images \
+                --imageList=${outputTXwImageString} \
+                --ref=${tXwTemplate} \
+                --refMask=${TemplateMask} \
+                --brainSize=${brainSize} \
+                --out=${tXwFolder}/${tXwImage}_bc \
+                --crop=no \
+                --clean=no \
+                --verbose=yes
+        else
+            log_Msg "Only one image found, not averaging T1w images, just copying"
+            ${RUN} ${FSLDIR}/bin/imcp ${tXwFolder}/${tXwImage}_bc1 ${tXwFolder}/${tXwImage}_bc
+        fi
 
-        # always add the message/parameters specified
-        outputTXwImageString="${outputTXwImageString}${tXwFolder}/${tXwImage}_bc${i}@"
-        i=$(($i+1))
-    done
+        # ------------------------------------------------------------------------------
+        # Brain Extraction (FNIRT-based Masking)
+        # ------------------------------------------------------------------------------
 
-    # ------------------------------------------------------------------------------
-    # Average Like (Same Modality) Scans
-    # ------------------------------------------------------------------------------
-
-    echo -e "\n...Averaging ${tXw} Scans"
-    if [ `echo $tXwInputImages | wc -w` -gt 1 ] ; then
-        log_Msg "Averaging ${tXw} Images, performing simple averaging"
-        log_Msg "mkdir -p ${tXwFolder}/Average${tXw}Images"
-        mkdir -p ${tXwFolder}/Average${tXw}Images
-        ${RUN} ${RPP_Scripts}/AnatomicalAverage.sh \
-            --workingDir=${tXwFolder}/Average${tXw}Images \
-            --imageList=${outputTXwImageString} \
+        echo -e "\n...Performing Brain Extraction using FNIRT-based Masking"
+        log_Msg "mkdir -p ${tXwFolder}/BrainExtractionFNIRTbased"
+        mkdir -p ${tXwFolder}/BrainExtractionFNIRTbased
+        ${RUN} ${RPP_Scripts}/BrainExtractionFNIRTbased.sh \
+            --workingDir=${tXwFolder}/BrainExtractionFNIRTbased \
+            --in=${tXwFolder}/${tXwImage}_bc \
             --ref=${tXwTemplate} \
             --refMask=${TemplateMask} \
-            --brainSize=${brainSize} \
-            --out=${tXwFolder}/${tXwImage}_bc \
-            --crop=no \
-            --clean=no \
-            --verbose=yes
+            --ref2mm=${tXwTemplate2mm} \
+            --ref2mmMask=${Template2mmMask} \
+            --outImage=${tXwFolder}/${tXwImage}_bc_fov \
+            --outBrain=${tXwFolder}/${tXwImage}_bc_fov_brain \
+            --outBrainMask=${tXwFolder}/${tXwImage}_bc_fov_brain_mask \
+            --FNIRTConfig=${FNIRTConfig}
+
+
+
+    done
+    # End of looping over modalities (T1w and T2w)
+
+    # ------------------------------------------------------------------------------
+    # T2w to T1w Registration
+    # ------------------------------------------------------------------------------
+
+
+    echo -e "\n...Performing T2w to T1w Registration"
+    if [ -z "${t2wInputImages}" ] ; then
+        log_Msg "Skipping T2w to T1w registration --- no T2w image."
+
     else
-        log_Msg "Only one image found, not averaging T1w images, just copying"
-        ${RUN} ${FSLDIR}/bin/imcp ${tXwFolder}/${tXwImage}_bc1 ${tXwFolder}/${tXwImage}_bc
+
+        wdir=${t2wFolder}/t2wToT1wReg
+        if [ -e ${wdir} ] ; then
+            # DO NOT change the following line to "rm -r "{wdir}"" because the changes of
+            # something going wrong with that are much higher, and rm -r always needs to
+            # be treated with the utmost caution
+            rm -r ${t2wFolder}/t2wToT1wReg
+        fi
+
+        log_Msg "mdir -p ${wdir}"
+        mkdir -p ${wdir}
+
+        ${RUN} ${RPP_Scripts}/T2wToT1wReg.sh \
+            ${wdir} \
+            ${t1wFolder}/${t1wImage}_bc_fov \
+            ${t1wFolder}/${t1wImage}_bc_fov_brain \
+            ${t2wFolder}/${t2wImage}_bc_fov \
+            ${t2wFolder}/${t2wImage}_bc_fov_brain \
+            ${t2wFolder}/${t2wImage}_bc_fov_brain_mask \
+            ${t1wFolder}/${t1wImage}_bc_fov \
+            ${t1wFolder}/${t1wImage}_bc_brain \
+            ${t1wFolder}/xfms/${t1wImage} \
+            ${t1wFolder}/${t2wImage}_bc_fov \
+            ${t1wFolder}/${t2wImage}_bc_fov_brain \
+            ${t1wFolder}/${t2wImage}_bc_fov_brain_mask \
+            ${t1wFolder}/xfms/${t2wImage}_bc_reg
     fi
-
-    # ------------------------------------------------------------------------------
-    # Brain Extraction (FNIRT-based Masking)
-    # ------------------------------------------------------------------------------
-
-    echo -e "\n...Performing Brain Extraction using FNIRT-based Masking"
-    log_Msg "mkdir -p ${tXwFolder}/BrainExtractionFNIRTbased"
-    mkdir -p ${tXwFolder}/BrainExtractionFNIRTbased
-    ${RUN} ${RPP_Scripts}/BrainExtractionFNIRTbased.sh \
-        --workingDir=${tXwFolder}/BrainExtractionFNIRTbased \
-        --in=${tXwFolder}/${tXwImage}_bc \
-        --ref=${tXwTemplate} \
-        --refMask=${TemplateMask} \
-        --ref2mm=${Template2mm} \
-        --ref2mmMask=${tXwTemplate2mmMask} \
-        --outBrain=${tXwFolder}/${tXwImage}_bc_brain \
-        --outBrainMask=${tXwFolder}/${tXwImage}_bc_brain_mask \
-        --FNIRTConfig=${FNIRTConfig}
 
     # ------------------------------------------------------------------------------
     # ACPC align image to specified MNI Template to create native volume space
     # ------------------------------------------------------------------------------
 
-    echo -e "\n...Aligning ${tXwImage} image to ${tXwTemplate} to create native volume space"
-    log_Msg "mkdir -p ${tXwFolder}/ACPCAlignment"
-    mkdir -p ${tXwFolder}/ACPCAlignment
+    echo -e "\n...Aligning ${t1wImage} image to ${t1wTemplate} to create native volume space"
+    log_Msg "mkdir -p ${t1wFolder}/ACPCAlignment"
+    mkdir -p ${t1wFolder}/ACPCAlignment
     ${RUN} ${RPP_Scripts}/ACPCAlignment.sh \
-        --workingDir=${tXwFolder}/ACPCAlignment \
-        --inImage=${tXwFolder}/${tXwImage}_bc \
-        --inBrain=${tXwFolder}/${tXwImage}_bc_brain \
-        --ref=${tXwTemplate} \
-        --outImage=${tXwFolder}/${tXwImage}_bc_acpc \
-        --outBrain=${tXwFolder}/${tXwImage}_bc_acpc_brain \
-        --oMat=${tXwFolder}/xfms/acpc.mat \
+        --workingDir=${t1wFolder}/ACPCAlignment \
+        --inImage=${t1wFolder}/${t1wImage}_bc_fov \
+        --inBrain=${t1wFolder}/${t1wImage}_bc_fov_brain \
+        --inBrainMask=${t1wFolder}/${t1wImage}_bc_fov_brain_mask \
+        --ref=${t1wTemplate} \
+        --refBrain=${t1wTemplateBrain} \
+        --full2roi=${t1wFolder}/BrainExtractionFNIRTbased/full2roi.mat \
+        --roi2full=${t1wFolder}/BrainExtractionFNIRTbased/roi2full.mat \
+        --outImage=${t1wFolder}/${t1wImage}_bc_fov_acpc \
+        --outBrain=${t1wFolder}/${t1wImage}_bc_fov_acpc_brain \
+        --outBrainMask=${t1wFolder}/${t1wImage}_bc_fov_acpc_brain_mask \
+        --oMat=${t1wFolder}/xfms/acpc.mat \
         --brainSize=${brainSize}
 
+    if [ -n "${t2wInputImages}" ] ; then
 
-done
-# End of looping over modalities (T1w and T2w)
+        # ------------------------------------------------------------------------------
+        # ACPC align image to specified MNI Template to create native volume space
+        # ------------------------------------------------------------------------------
 
-# ------------------------------------------------------------------------------
-# T2w to T1w Registration
-# ------------------------------------------------------------------------------
-
-
-echo -e "\n...Performing T2w to T1w Registration"
-if [ -z "${t2wInputImages}" ] ; then
-    log_Msg "Skipping T2w to T1w registration --- no T2w image."
-
-else
-
-    wdir=${t2wFolder}/t2wToT1wReg
-    if [ -e ${wdir} ] ; then
-        # DO NOT change the following lie to "rm -r "{wdir}"" because the changes of
-        # something going wrong with that are much higher, and rm -r always needs to
-        # be treated with the utmost caution
-        rm -r ${t2wFolder}/t2wToT1wReg
+        echo -e "\n...Aligning ${t2wImage} image to ${t2wTemplate} to create native volume space"
+        log_Msg "mkdir -p ${t1wFolder}/ACPCAlignment"
+        mkdir -p ${t2wFolder}/ACPCAlignment
+        ${RUN} ${RPP_Scripts}/ACPCAlignment.sh \
+            --workingDir=${t2wFolder}/ACPCAlignment \
+            --inImage=${t1wFolder}/${t2wImage}_bc_fov \
+            --inBrain=${t1wFolder}/${t2wImage}_bc_fov_brain \
+            --inBrainMask=${t1wFolder}/${t2wImage}_bc_fov_brain_mask \
+            --ref=${t1wTemplate} \
+            --refBrain=${t1wTemplateBrain} \
+            --full2roi=${t2wFolder}/BrainExtractionFNIRTbased/full2roi.mat \
+            --roi2full=${t2wFolder}/BrainExtractionFNIRTbased/roi2full.mat \
+            --outImage=${t2wFolder}/${t2wImage}_bc_fov_acpc \
+            --outBrain=${t2wFolder}/${t2wImage}_bc_fov_acpc_brain \
+            --outBrainMask=${t2wFolder}/${t2wImage}_bc_fov_acpc_brain_mask \
+            --oMat=${t2wFolder}/xfms/acpc.mat \
+            --brainSize=${brainSize}
     fi
 
-    log_Msg "mdir -p ${wdir}"
-    mkdir -p ${wdir}
+    # ------------------------------------------------------------------------------
+    # Create a One-Step Resampled Version of the T1w_acpc, T2w_acpc outputs
+    # ------------------------------------------------------------------------------
 
-    ${RUN} ${RPP_Scripts}/T2wToT1wReg.sh \
-        ${wdir} \
-        ${t1wFolder}/${t1wImage}_bc_acpc \
-        ${t1wFolder}/${t1wImage}_bc_acpc_brain \
-        ${t2wFolder_t2wImageWithPath_acpc} \
-        ${t2wFolder_t2wImageWithPath_acpc_brain} \
-        ${t1wFolder}/${t1wImage}_bc_acpc \
-        ${t1wFolder}/${t1wImage}_bc_acpc_brain \
-        ${t1wFolder}/xfms/${t1wImage} \
-        ${t1wFolder}/${t2wImage}_bc_acpc \
-        ${t1wFolder}/xfms/${t2wImage}_bc_reg
-fi
+    if [ -z "${t2wInputImages}" ] ; then
+
+        echo -e "\n...Creating One-Step Resampled Version of the T1w_acpc Output"
+        log_Msg "mkdir -p ${t1wFolder}/OneStepResampledACPC"
+        mkdir -p ${t1wFolder}/OneStepResampledACPC
+        ${RUN} ${RPP_Scripts}/OneStepResampledACPC.sh \
+            --workingDir=${t1wFolder}/OneStepResampledACPC \
+            --t1=${t1wFolder}/${t1wImage}_bc \
+            --t1ACPC=${t1wFolder}/${t1wImage}_bc_fov_acpc \
+            --t1ACPCBrain=${t1wFolder}/${t1wImage}_bc_fov_acpc_brain \
+            --t1w2ACPC=${t1wFolder}/xfms/acpc.mat \
+            --T1w2T1w=${t1wFolder}/xfms/${t1wImage} \
+            --ref=${t1wTemplate} \
+            --oWarpT1=${t1wFolder}/xfms/origT1w2T1w \
+            --oT1=${t1wFolder}/${t1wImage}_bc_fov_acpc \
+            --oT1Brain=${t1wFolder}/${t1wImage}_bc_fov_acpc_brain
+
+    else
+
+        echo -e "\n...Creating One-Step Resampled Version of the T1w_acpc, T2w_acpc outputs"
+        log_Msg "mkdir -p ${t1wFolder}/OneStepResampledACPC"
+        mkdir -p ${t1wFolder}/OneStepResampledACPC
+        ${RUN} ${RPP_Scripts}/OneStepResampledACPC.sh \
+            --workingDir=${t1wFolder}/OneStepResampledACPC \
+            --t1=${t1wFolder}/${t1wImage}_bc \
+            --t1ACPC=${t1wFolder}/${t1wImage}_bc_fov_acpc \
+            --t1ACPCBrain=${t1wFolder}/${t1wImage}_bc_fov_acpc_brain \
+            --t1w2ACPC=${t1wFolder}/xfms/acpc.mat \
+            --t1w2T1w=${t1wFolder}/xfms/${t1wImage} \
+            --fullT1w2roi=${t1wFolder}/BrainExtractionFNIRTbased/full2roi.mat \
+            --t2=${t2wFolder}/${t2wImage}_bc \
+            --t2ACPC=${t2wFolder}/${t2wImage}_bc_fov_acpc \
+            --t2ACPCBrain=${t2wFolder}/${t2wImage}_bc_fov_acpc_brain \
+            --t2w2ACPC=${t2wFolder}/xfms/acpc.mat \
+            --t2w2T1w=${t1wFolder}/xfms/${t2wImage}_bc_reg \
+            --fullT2w2roi=${t2wFolder}/BrainExtractionFNIRTbased/full2roi.mat \
+            --ref=${t1wTemplate} \
+            --oWarpT1=${t1wFolder}/xfms/origT1w2T1w \
+            --oT1=${t1wFolder}/${t1wImage}_bc_fov_acpc_final \
+            --oT1Brain=${t1wFolder}/${t1wImage}_bc_fov_acpc_brain_final \
+            --oWarpT2=${t1wFolder}/xfms/origT2w2T1w \
+            --oT2=${t1wFolder}/${t2wImage}_bc_fov_acpc_final \
+            --oT2Brain=${t1wFolder}/${t2wImage}_bc_fov_acpc_brain_final
+
+    fi
+
+# ------------------------------------------------------------------------------
+# Using custom mask
+# ------------------------------------------------------------------------------
+# The mask should be aligned with ACPC
+
+elif [ "$customBrain" = "MASK" ] ; then
+
+    echo -e "\n...Custom Mask provided, skipping all the steps to Atlas registration, applying custom mask."
+    OutputT1wImage=${T1wFolder}/${T1wImage}_bc_acpc_final
+    ${FSLDIR}/bin/fslmaths ${OutputT1wImage} -mas ${T1wFolder}/custom_bc_acpc_mask ${OutputT1wImage}_brain
+
+    if [ -n "${t2wInputImages}" ] ; then
+
+        OutputT2wImage=${T1wFolder}/${T2wImage}_bc_acpc_final
+        ${FSLDIR}/bin/fslmaths ${OutputT2wImage} -mas ${T1wFolder}/custom_bc_acpc_mask ${OutputT2wImage}_brain
+    fi
 
 
 # ------------------------------------------------------------------------------
-# Create a One-Step Resampled Version of the T1w_acpc, T2w_acpc outputs
+# Using custom structural images
 # ------------------------------------------------------------------------------
-
-if [ -z "${t2wInputImages}" ] ; then
-
-    echo -e "\n...Creating One-Step Resampled Version of the T1w_acpc Output"
-    log_Msg "mkdir -p ${t1wFolder}/OneStepResampledACPC"
-    mkdir -p ${t1wFolder}/OneStepResampledACPC
-    ${RUN} ${RPP_Scripts}/OneStepResampledACPC.sh \
-        --workingDir=${t1wFolder}/OneStepResampledACPC \
-        --t1=${t1wFolder}/${t1wImage}_bc \
-        --t1ACPC=${t1wFolder}/${t1wImage}_bc_acpc \
-        --t1ACPCBrain=${t1wFolder}/${t1wImage}_bc_acpc_brain \
-        --preMatT1=${t1wFolder}/xfms/acpc.mat \
-        --T1w2T1w=${t1wFolder}/xfms/${t1wImage} \
-        --ref=${t1wTemplate} \
-        --oWarpT1=${t1wFolder}/xfms/origT1w2T1w \
-        --oT1=${t1wFolder}/${t1wImage}_bc_acpc \
-        --oT1Brain=${t1wFolder}/${t1wImage}_bc_acpc_brain
 
 else
 
-    echo -e "\n...Creating One-Step Resampled Version of the T1w_acpc, T2w_acpc outputs"
-    log_Msg "mkdir -p ${t1wFolder}/OneStepResampledACPC"
-    mkdir -p ${t1wFolder}/OneStepResampledACPC
-    ${RUN} ${RPP_Scripts}/OneStepResampledACPC.sh \
-        --workingDir=${t1wFolder}/OneStepResampledACPC \
-        --t1=${t1wFolder}/${t1wImage}_bc \
-        --t1ACPC=${t1wFolder}/${t1wImage}_bc_acpc \
-        --t1ACPCBrain=${t1wFolder}/${t1wImage}_bc_acpc_brain \
-        --preMatT1=${t1wFolder}/xfms/acpc.mat \
-        --t1w2T1w=${t1wFolder}/xfms/${t1wImage} \
-        --t2=${t2wFolder}/${t2wImage}_bc \
-        --t2ACPC=${t2wFolder}/${t2wImage}_bc_acpc \
-        --t2ACPCBrain=${t2wFolder}/${t2wImage}_bc_acpc_brain \
-        --preMatT2=${t2wFolder}/xfms/acpc.mat \
-        --t2w2T1w=${t1wFolder}/xfms/${t2wImage}_reg \
-        --ref=${t1wTemplate} \
-        --oWarpT1=${t1wFolder}/xfms/origT1w2T1w \
-        --oT1=${t1wFolder}/${t1wImage}_bc_acpc_final \
-        --oT1Brain=${t1wFolder}/${t1wImage}_bc_acpc_brain_final \
-        --oWarpT2=${t1wFolder}/xfms/origT2w2T1w \
-        --oT2=${t1wFolder}/${t2wImage}_bc_acpc_final \
-        --oT2Brain=${t1wFolder}/${t2wImage}_bc_acpc_brain_final
+    echo -e "\n...Custom structural images provided, skipping all the steps to Atlas registration, using existing images instead."
 
 fi
 
 # ------------------------------------------------------------------------------
 #  Atlas Registration to MNI152
-#  Also applies the MNI registration to T1w image
+#  Also applies the MNI registration to T1w/T2w image
 #  Performs either FLIRT or FLIRT + FNIRT depending on the value of linear
 # ------------------------------------------------------------------------------
 
@@ -542,10 +633,10 @@ if [ $linear = yes ] ; then
 
         ${RUN} ${RPP_Scripts}/AtlasRegistrationToMNI152FLIRT.sh \
             --workingDir=${atlasSpaceFolder} \
-            --t1=${t1wFolder}/${t1wImage}_bc_acpc_final \
-            --t1Brain=${t1wFolder}/${t1wImage}_bc_acpc_brain_final \
-            --t2=${t1wFolder}/${t2wImage}_bc_acpc_final \
-            --t2Brain=${t1wFolder}/${t2wImage}_bc_acpc_brain_final \
+            --t1=${t1wFolder}/${t1wImage}_bc_fov_acpc_final \
+            --t1Brain=${t1wFolder}/${t1wImage}_bc_fov_acpc_brain_final \
+            --t2=${t1wFolder}/${t2wImage}_bc_fov_acpc_final \
+            --t2Brain=${t1wFolder}/${t2wImage}_bc_fov_acpc_brain_final \
             --ref=${t1wTemplate} \
             --refBrain=${t1wTemplateBrain} \
             --refMask=${TemplateMask} \

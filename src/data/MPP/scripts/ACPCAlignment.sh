@@ -72,16 +72,21 @@ if [ $# -lt 5 ] ; then Usage; exit 1; fi
 WD=`getopt1 "--workingDir" $@`  # "$1"
 InputImage=`getopt1 "--inImage" $@`  # "$2"
 InputBrain=`getopt1 "--inBrain" $@`  # "$2"
+InputBrainMask=`getopt1 "--inBrainMask" $@`  # "$2"
 Reference=`getopt1 "--ref" $@`  # "$3"
+ReferenceBrain=`getopt1 "--refBrain" $@`  # "$3"
+full2roi=`getopt1 "--full2roi" $@`  # "$3"
+roi2full=`getopt1 "--roi2full" $@`  # "$3"
 OutputImage=`getopt1 "--outImage" $@`  # "$4"
 OutputBrain=`getopt1 "--outBrain" $@`  # "$4"
+OutputBrainMask=`getopt1 "--outBrainMask" $@`  # "$4"
 OutputMatrix=`getopt1 "--oMat" $@`  # "$5"
 BrainSizeOpt=`getopt1 "--brainSize" $@`  # "$6"
 
 # default parameters
 Reference=`defaultopt ${Reference} ${MNI_Templates}/MNI152_T1_1mm`
-Output=`$FSLDIR/bin/remove_ext $Output`
-WD=`defaultopt $WD ${Output}.wdir`
+OutputImage=`$FSLDIR/bin/remove_ext $OutputImage`
+OutputBrain=`$FSLDIR/bin/remove_ext $OutputBrain`
 
 # make optional arguments truly optional  (as -b without a following argument would crash robustfov)
 if [ X${BrainSizeOpt} != X ] ; then BrainSizeOpt="-b ${BrainSizeOpt}" ; fi
@@ -98,25 +103,43 @@ echo " " >> $WD/log.txt
 
 ########################################## DO WORK ##########################################
 # Crop the FOV
-${FSLDIR}/bin/robustfov -i "$InputImage" -m "$WD"/roi2full.mat -r "$WD"/robustroi.nii.gz -b $BrainSizeOpt
+#${FSLDIR}/bin/robustfov -i "$InputImage" -m "$WD"/roi2full.mat -r "$WD"/robustroi.nii.gz $BrainSizeOpt
 #${FSLDIR}/bin/robustfov -i "$Input" -m "$WD"/roi2full.mat -r "$WD"/robustfov.nii.gz
 
 # Invert the matrix (to get full FOV to ROI)
-${FSLDIR}/bin/convert_xfm -omat "$WD"/full2roi.mat -inverse "$WD"/roi2full.mat
+#${FSLDIR}/bin/convert_xfm -omat "$WD"/full2roi.mat -inverse "$WD"/roi2full.mat
 
-# Register cropped image to MNI152 (12 DOF)
+# Register croped brain to MNI152 (12 DOF)
 ${FSLDIR}/bin/flirt -interp spline -in $InputBrain -ref "$Reference" -omat "$WD"/roi2std.mat -out "$WD"/acpc_final.nii.gz -searchrx -30 30 -searchry -30 30 -searchrz -30 30 -dof 12
 #${FSLDIR}/bin/flirt -interp spline -in "$WD"/robustfov.nii.gz -ref "$Reference" -omat "$WD"/roi2std.mat -out "$WD"/acpc_mni.nii.gz
 
 # Concatenate matrices to get full FOV to MNI
-${FSLDIR}/bin/convert_xfm -omat "$WD"/full2std.mat -concat "$WD"/roi2std.mat "$WD"/full2roi.mat
+#${FSLDIR}/bin/convert_xfm -omat "$WD"/full2std.mat -concat "$WD"/roi2std.mat $full2roi
 
 # Get a 6 DOF approximation which does the ACPC alignment (AC, ACPC line, and hemispheric plane)
-${FSLDIR}/bin/aff2rigid "$WD"/full2std.mat "$OutputMatrix"
+#${FSLDIR}/bin/aff2rigid "$WD"/full2std.mat "$OutputMatrix"
+${FSLDIR}/bin/aff2rigid "$WD"/roi2std.mat "$OutputMatrix"
+
+# Uncrop Brain image
+#${FSLDIR}/bin/flirt -in "$InputBrain" -ref "$InputImage" -out "$InputBrain" -init $roi2full -applyxfm
 
 # Resample the entire image and brain to ACPC space using spline interpolation
 ${FSLDIR}/bin/applywarp --rel --interp=spline -i "$InputBrain" -r "$Reference" --premat="$OutputMatrix" -o "$OutputBrain"
+# Use -abs (rather than '-thr 0') to avoid introducing zeros
+${FSLDIR}/bin/fslmaths ${OutputBrain} -abs ${OutputBrain} -odt float
+
 ${FSLDIR}/bin/applywarp --rel --interp=spline -i "$InputImage" -r "$Reference" --premat="$OutputMatrix" -o "$OutputImage"
+# Use -abs (rather than '-thr 0') to avoid introducing zeros
+${FSLDIR}/bin/fslmaths ${OutputImage} -abs ${OutputImage} -odt float
+
+# Align mask with ACPC
+${FSLDIR}/bin/applywarp --rel --interp=nn -i "$InputBrainMask" -r "$OutputBrain" --premat="$OutputMatrix" -o "$OutputBrainMask"
+#echo "test"
+
+${FSLDIR}/bin/fslmaths ${OutputBrain} -mas ${OutputBrainMask} ${OutputBrain}
+
+${FSLDIR}/bin/fslmaths ${OutputBrain} -abs ${OutputBrain} -odt float
+
 
 # make png
 ${FSLDIR}/bin/slicer $OutputBrain -x 0.5 "$WD"/aligncheck.png
@@ -132,6 +155,6 @@ echo "cd `pwd`" >> $WD/qa.txt
 echo "# Check that the following image does not cut off any brain tissue" >> $WD/qa.txt
 echo "fsleyes $WD/robustroi" >> $WD/qa.txt
 echo "# Check that the alignment to the reference image is acceptable (the top/last image is spline interpolated)" >> $WD/qa.txt
-echo "fsleyes $Reference $WD/acpc_final $Output" >> $WD/qa.txt
+echo "fsleyes $Reference $WD/acpc_final $OutputImage $OutputBrain" >> $WD/qa.txt
 
 ##############################################################################################
