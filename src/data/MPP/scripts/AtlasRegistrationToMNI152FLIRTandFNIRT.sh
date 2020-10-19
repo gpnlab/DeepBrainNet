@@ -108,10 +108,10 @@ Reference2mmMask=`opts_DefaultOpt $Reference2mmMask ${MNI_Templates}/MNI152_T1_2
 FNIRTConfig=`opts_DefaultOpt $FNIRTConfig ${MPP_Config}/T1_2_MNI152_2mm.cnf`
 
 #T1wBasename=`${FSLDIR}/bin/remove_ext $T1w`;
-T1wBasename=`remove_ext $T1w`;
+T1wBasename=`${FSLDIR}/bin/remove_ext $T1w`;
 T1wBasename=`basename $T1wBasename`;
 #T1wBrainBasename=`${FSLDIR}/bin/remove_ext $T1wBrain`;
-T1wBrainBasename=`remove_ext $T1wBrain`;
+T1wBrainBasename=`${FSLDIR}/bin/remove_ext $T1wBrain`;
 T1wBrainBasename=`basename $T1wBrainBasename`;
 
 log_Msg "START: Nonlinear Atlas Registration to MNI152"

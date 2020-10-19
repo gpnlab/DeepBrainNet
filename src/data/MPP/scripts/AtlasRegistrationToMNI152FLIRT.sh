@@ -99,10 +99,10 @@ OutputT2wImageBrainMask=`opts_GetOpt1 "--oT2BrainMask" $@`  # "$12"
 WD=`opts_DefaultOpt $WD .`
 
 #T1wBasename=`${FSLDIR}/bin/remove_ext $T1w`;
-T1wBasename=`remove_ext $T1w`;
+T1wBasename=`${FSLDIR}/bin/remove_ext $T1w`;
 T1wBasename=`basename $T1wBasename`;
 #T1wBrainBasename=`${FSLDIR}/bin/remove_ext $T1wBrain`;
-T1wBrainBasename=`remove_ext $T1wBrain`;
+T1wBrainBasename=`${FSLDIR}/bin/remove_ext $T1wBrain`;
 T1wBrainBasename=`basename $T1wBrainBasename`;
 
 log_Msg "START: Linear Atlas Registration to MNI152"
