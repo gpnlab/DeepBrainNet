@@ -116,6 +116,7 @@ set -eu
 
 echo -e "\nEnvironment Variables"
 
+# ADD COMMENT LAPTOP
 log_Check_Env_Var DBNDIR
 log_Check_Env_Var DBN_Libraries
 log_Check_Env_Var MPPDIR
@@ -233,7 +234,7 @@ input_parser "$@"
 # ------------------------------------------------------------------------------
 opts_ShowValues
 
-# Naming Conventions
+# Naming Conventions for directories
 t1wImage="T1w"
 t1wFolder="T1w" #Location of T1w images
 t2wImage="T2w"
@@ -468,9 +469,8 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-#  Atlas Registration to MNI152
-#  Also applies the MNI registration to T1w/T2w image
-#  Performs either FLIRT or FLIRT + FNIRT depending on the value of linear
+#  Registration to MNI152
+#  Performs either FLIRT or FLIRT + FNIRT depending on the value of MNIRegistrationMethod
 # ------------------------------------------------------------------------------
 
 log_Msg "MNIFolder: $MNIFolder"
@@ -482,19 +482,19 @@ fi
 if [ $MNIRegistrationMethod = linear ] ; then
 
     # ------------------------------------------------------------------------------
-    #  Atlas Registration to MNI152: FLIRT
+    #  Linear Registration to MNI152: FLIRT
     # ------------------------------------------------------------------------------
 
-    echo -e "\n...Performing Atlas Registration to MNI152 (FLIRT)"
+    echo -e "\n...Performing Linear Atlas Registration to MNI152 (FLIRT)"
     registrationScript=AtlasRegistrationToMNI152FLIRT.sh
 
 else
 
     # ------------------------------------------------------------------------------
-    #  Atlas Registration to MNI152: FLIRT + FNIRT
+    #  Nonlinear Registration to MNI152: FLIRT + FNIRT
     # ------------------------------------------------------------------------------
 
-    echo -e "\n...Performing Atlas Registration to MNI152 (FLIRT and FNIRT)"
+    echo -e "\n...Performing Nonlinear Registration to MNI152 (FLIRT and FNIRT)"
     registrationScript=AtlasRegistrationToMNI152FLIRTandFNIRT.sh
 fi
 
