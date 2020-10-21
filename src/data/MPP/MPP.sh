@@ -116,12 +116,12 @@ set -eu
 
 echo -e "\nEnvironment Variables"
 
+# ADD COMMENT CLUSTER
 log_Check_Env_Var DBNDIR
 log_Check_Env_Var DBN_Libraries
 log_Check_Env_Var MPPDIR
 log_Check_Env_Var MPP_Scripts
 log_Check_Env_Var FSLDIR
-#change laptop
 log_Check_Env_Var MATLABDIR
 log_Check_Env_Var SPM12DIR
 
