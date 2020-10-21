@@ -23,70 +23,91 @@ $ conda deactivate
 - T1 scans must be in nifti format
 - Scans can either be raw and placed on the `data/raw/<study name>`
 - Or scans shoud be skull-striped and (linearly) registered and placed on the `data/preprocessed/<study name>/<pipeline>`, where `<pipeline>` is refers to which preprocessing pipeline was used.
-- For example, if using data from the ADNI dataset and running the RPP (Registration-based Processing Pipeline), pipeline provided in this package, the preprocessed data will be stored in `data/preprocessed/ADNI/RPP`.
+- For example, if using data from the ADNI dataset and running the MPP (Minimal Processing Pipeline), pipeline provided in this package, the preprocessed data will be stored in `data/preprocessed/ADNI/MPP`.
 
-## RPP
+## MPP
 As of version 1.0.0 the RPP is available.
 
 As of version 1.1.0 it is also possible to perform RPP with linear registration, instead of nonlinear registration. This is now the default behavior since it conforms with the origional tranning dataset. to change this behavior see the help on function `src/data/RPP/RPP.sh`. Basically, you just need to pass the flag `--linear=no` to `RPP.sh`
 
 As of version 2.0.0 there is support to processing both T1w and T2w images. It also supports simple anatomical average of repeated scans.
 
-The primary purposes of the RPP are:
+As of version 3.0.0 there are major changes. First, there is now support for segmentation-based brain extraction in additional to registration-based brain extraction, so the pipeline was renamed from Registration-based Processing Pipeline (RPP) to Minimal Processing Pipeline (MPP) to better reflect its capabilities.
+Also, bias correction capability was added. Both segmentation-based brain extraction and bias correction requires MATLAB and SPM12. The so-called native space (align with ACPC line) and the one-step transform to native space were removed as it added unecessary processing that increase the processing time and the likelihood of resampling errors.
+Finally, better naming conventions and folder organization for log files and output were implemented.
+
+The primary purposes of the MPP are:
 
 1. To average any image repeats (i.e. multiple T1w images available)
+2. To perform bias correction
 2. To provide an initial robust brain extraction
-3. To register the subject's native space to the MNI space
+4. To register the subject's structural images to the MNI space
 
-## Prerequisites:
+ ## Prerequisites:
 
-### Installed Software
+ ### Installed Software
 
-* [FSL][FSL] - FMRIB's Software Library (version >= 5.0.6)
+ * [FSL][FSL] - FMRIB's Software Library (version 5.0.6)
+ * MATLAB
+ * SPM12
 
-### Environment Variables
+ ### Environment Variables
 
-* RPPDIR
+ * MPPDIR
 
-* RPP_Scripts
+ * MPP_Scripts
 
-Location of RPP sub-scripts that are used to carry out some of steps of the RPP.
+   Location of MPP sub-scripts that are used to carry out some of steps of the MPP.
 
-* FSLDIR
+ * FSLDIR
 
-Home directory for [FSL][FSL] the FMRIB Software Library from Oxford
-University
+   Home directory for [FSL][FSL] the FMRIB Software Library from Oxford
+   University
 
-### Image Files
+ * MATLABDIR
 
-At least one T1 weighted image is required for this script to work.
+   Home directory for MATLAB from
 
-### Output Directories
+ * SPM12DIR
 
-All outputs are generated within the tree rooted
-at `${studyFolder}/${subject}`.  The main output directories are:
+   Home directory for SPM12 from
 
-* The t1wFolder: `${DBNDir}/data/preprocessed/${studyFolder}/${subject}/{b0}/t1w`
-* The t2wFolder: `${DBNDir}/data/preprocessed/${studyFolder}/${subject}/{b0}/t2w`
-* The atlasSpaceFolder: `${studyFolder}/${subject}/${b0}/MNINonLinear` or
-* The atlasSpaceFolder: `${studyFolder}/${subject}/${b0}/MNILinear`,
-if linear registration is to MNI space is performed
+ ### Image Files
 
-All outputs are generated in directories at or below these three main
-output directories.  The full list of output directories is:
+ At least one T1 weighted image and one T2 weighted image are required for this
+ script to work.
 
-* `${t1wFolder}/AverageT1wImages`
-* `${t1wFolder}/ACPCAlignment`
-* `${t1wFolder}/BrainExtractionFNIRTbased`
-* `${t1wFolder}/xfms` - transformation matrices and warp fields
+ ### Output Directories
 
-* `${t2wFolder}/AverageT1wImages`
-* `${t2wFolder}/ACPCAlignment`
-* `${t2wFolder}/BrainExtractionFNIRTbased`
-* `${t2wFolder}/xfms` - transformation matrices and warp fields
+ Command line arguments are used to specify the studyName (--studyName) and
+ the subject (--subject).  All outputs are generated within the tree rooted
+ at ./studyName}/subject.  The main output directories are:
 
-* `${atlasSpaceFolder}`
-* `${atlasSpaceFolder}/xfms`
+ * The t1wFolder: ./tmp/studyName/subject/b0/t1w
+ * The t2wFolder: ./tmp/studyName/subject/b0/t2w
+ * The MNIFolder: ./tmp/studyName/subject/b0/MNI
+
+ All outputs are generated in directories at or below these two main
+ output directories.  The full list of output directories is:
+
+ * t1wFolder/AverageT1wImages
+ * t1wFolder/BrainExtractionRegistration(Segmentation)Based
+ * t1wFolder/xfms - transformation matrices and warp fields
+
+ * t2wFolderAverageT1wImages
+ * t2wFolder/BrainExtractionRegistration(Segmentation)Based
+ * t2wFolder/xfms - transformation matrices and warp fields
+
+ * MNIFolder
+ * MNIFolder/xfms
+
+ Logs are saved in `logs/MPP`
+
+ ### Output Files
+
+ * t1wFolder Contents: TODO
+ * t2wFolder Contents: TODO
+ * MNIFolder Contents: TODO
 
 Note that no assumptions are made about the input paths with respect to the
 output directories. All specification of input files is done via command
@@ -99,12 +120,11 @@ values: `--studyFolder / --subject / --b0 / --t1`
 * `t2wFolder`, which is created by concatenating the following four option
 values: `--studyFolder / --subject / --b0 / --t2`
 
-Logs are saved in `logs/RPP`
 
-### Running RPP on a computer cluster
-As of version 1.2.0, it is possible to submit RPP jobs to a cluster. More information by seeing the help `src/data/RPP/run_RPP_Cluster.sh --help`. There you can find all the flags you can submit to slurm-managed clusters. The submitting script can be found in `src/data/RPP/RPP_Cluster.sh`.
+### Running MPP on a computer cluster
+As of version 1.2.0, it is possible to submit MPP jobs to a cluster. More information by seeing the help `src/data/MPP/runMPP_Cluster.sh --help`. There you can find all the flags you can submit to slurm-managed clusters. The submitting script can be found in `src/data/MPP/MPP_Cluster.sh`.
 
-As of version 1.3.0, it is also possible to submit RPP jobs to the H2P computational cluster at the Center for Research Computing (CRC). More information by seeing the help `src/data/RPP/run_RPP_CRC.sh --help`. The submitting script can be found in `src/data/RPP/RPP_CRC.sh`. Remember to load python before calling the script with `module load python/anaconda3.7-5.2.0` as it requires `numpy`.
+As of version 1.3.0, it is also possible to submit MPP jobs to the H2P computational cluster at the Center for Research Computing (CRC). More information by seeing the help `src/data/MPP/runMPP_CRC.sh --help`. The submitting script can be found in `src/data/MPP/MPP_CRC.sh`. Remember to load python before calling the script with `module load python/anaconda3.7-5.2.0` as it requires `numpy`.
 
 <!-- References -->
 [FSL]: http://fsl.fmrib.ox.ac.uk
@@ -117,9 +137,9 @@ $ make
 ```
 This will download the four ADNI sample T1 images and all the models made available if they weren't downloaded already. The models and sample data are currently served statically at my pitt.box.com.
 
-After the download, the raw data (`data/raw/ADNI`) is preprocessed using the RPP and stored in `data/preprocessed/ADNI/RPP`.
+After the download, the raw data (`data/raw/ADNI`) is preprocessed using the MPP and stored in `data/preprocessed/ADNI/MPP`.
 
-Then the model `DBN_model.h5` is ran on the sample data. The result will be stored in the folder results under `data/processed/ADNI/RPP/subjects/brain_age.txt`.
+Then the model `DBN_model.h5` is ran on the sample data. The result will be stored in the folder results under `data/processed/ADNI/MPP/subjects/brain_age.txt`.
 
 To run the other models, on the repo root, run instead:
 ```bash
@@ -141,7 +161,7 @@ List of available models:
 
 ## Results
 
-These are the values to expect when running the models on the four ADNI samples using the RPP
+These are the values to expect when running the models on the four ADNI samples using the MPP
 
 ### 002_S_0413
 | Model                    | Predicted Age      |

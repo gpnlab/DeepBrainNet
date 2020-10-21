@@ -10,14 +10,18 @@
 # ### Installed software
 #
 # * FSL
+# * MATLAB
+# * SPM12
 #
 # ### Environment variables
 #
-# Should be set in script file pointed to by environmentScript variable.
-# See setting of the environmentScript variable in the main() function
+# Should be set in environment configuration script file.
+# See setting of ./setUpRPP.sh
 # below.
 #
 # * FSLDIR - main FSL installation directory
+# * MATLABDIR - main MATLAB installation directory
+# * SPM12DIR - main SPM12 installation directory
 # * RPPDIR - main DBN Registration Processing Pipeline (RPP) installation directory
 #
 # <!-- References -->
@@ -78,6 +82,8 @@ function main() {
     opts_AddOptional  '--b0' 'b0' 'magnetic field intensity' "an optional value; the scanner magnetic field intensity, e.g., 1.5T, 3T, 7T" "3T"
     opts_AddOptional  '--runLocal' 'runLocal' 'do (not) run locallly' "an optinal value; indicates if processing is run on "this" machine as opposed to being submitted to a computing grid"  "yes"
     opts_AddOptional  '--linear'  'linear' '(non)linear registration to MNI' "an optional value; if it is set then only an affine registration to MNI is performed, otherwise, a nonlinear registration to MNI is performed" "yes"
+    opts_AddOptional  '--windowSize'  'WindowSize' 'window size for bias correction' "an optional value; window size for bias correction; for 7T MRI, the optimal value ranges between 20 and 30" "30"
+    opts_AddOptional  '--customBrain'  'CustomBrain' 'If custom mask or structural images provided' "an optional value; If you have created a custom brain mask saved as <subject>/T1w/custom_acpc_mask.nii.gz, specify MASK. If you have created custom structural images, e.g.: - <subject>/T1w/T1w_acpc_brain_final.nii.gz - <subject>/T1w/T1w_acpc_final.nii.gz - <subject>/T1w/T2w_acpc_brain_final.nii.gz - <subject>/T1w/T2w_acpc_final.nii.gz to be used when peforming MNI152 Atlas registration, specify CUSTOM. When MASK or CUSTOM is specified, only the AtlasRegistration step is run. If the parameter is omitted or set to NONE (the default), standard image processing will take place. NOTE: This option allows manual correction of brain images in cases when they were not successfully processed and/or masked by the regular use of the pipelines. Before using this option, first ensure that the pipeline arguments used were correct and that templates are a good match to the data." "NONE"
     opts_AddOptional  '--debugMode' 'PRINTCOM' 'do (not) perform a dray run' "an optional value; If PRINTCOM is not a null or empty string variable, then this script and other scripts that it calls will simply print out the primary commands it otherwise would run. This printing will be done using the command specified in the PRINTCOM variable, e.g., echo" "" "--PRINTCOM" "--printcom"
 
     opts_ParseArguments "$@"
@@ -157,15 +163,16 @@ function main() {
 		T2wTemplateBrain="${MNI_Templates}/MNI152_T2_0.7mm_brain.nii.gz"
 		# Lowres T1w MNI template
 		T2wTemplate2mm="${MNI_Templates}/MNI152_T2_2mm.nii.gz"
-		# Hires MNI brain mask template
+		# Hires T1w MNI brain mask template
 		TemplateMask="${MNI_Templates}/MNI152_T1_0.7mm_brain_mask.nii.gz"
-		# Lowres MNI brain mask template
+		# Lowres T1w MNI brain mask template
 		Template2mmMask="${MNI_Templates}/MNI152_T1_2mm_brain_mask_dil.nii.gz"
 
 		# Other Config Settings
 
 		# BrainSize in mm, 150 for humans
 		BrainSize="150"
+
 		# FNIRT 2mm T1w Config
 		FNIRTConfig="${RPP_Config}/T1_2_MNI152_2mm.cnf"
 
@@ -196,6 +203,8 @@ function main() {
                 --template2mmMask="$Template2mmMask" \
                 --brainSize="$BrainSize" \
                 --linear="$linear" \
+                --windowSize="$WindowSize" \
+                --customBrain="$CustomBrain" \
                 --FNIRTConfig="$FNIRTConfig" \
                 --printcom=$PRINTCOM \
                 1> "$logDir"/"$subject".out \
@@ -223,6 +232,7 @@ function main() {
                 --template2mmMask="$Template2mmMask" \
                 --brainSize="$BrainSize" \
                 --linear="$linear" \
+                --windowSize="$windowSize"
                 --FNIRTConfig="$FNIRTConfig" \
                 --printcom=$PRINTCOM
 		fi

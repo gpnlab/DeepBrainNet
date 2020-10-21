@@ -109,8 +109,8 @@ opts_CheckForImplicitHelpRequest() {
 
 opts_ShowVersionIfRequested() {
     if opts_CheckForVersionRequest $@; then
-        if [ -f ${RPPDIR}/product.txt ]; then
-            tool=`cat ${RPPDir}/product.txt`
+        if [ -f ${MPPDIR}/product.txt ]; then
+            tool=`cat ${MPPDir}/product.txt`
         else
             tool="Tool Unknown"
         fi

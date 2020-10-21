@@ -64,13 +64,17 @@ function main()
         loggedSubjectsFile="${LOG_FOLDER}/logged_subjects.txt"
         if [ -e "${loggedSubjectsFile}" ] ; then
             rm -f "${loggedSubjectsFile}"
-            files=$(grep -l -R "RPP Completed" ${LOG_FOLDER})
-            for f in $files ; do
-                #filename=$(dirname "$(dirname "$f")")
-                #filename=$(basename -- "$filename")
-                filename=$(basename -- "$f")
-                filename="${filename%.*}"
-                echo $filename >> $loggedSubjectsFile
+            types=("RPP linear completed!" "SPP linear completed!" "RPP nonlinear completed!" "SPP nonlinear completed!")
+            for t in ${types[@]}; do
+                echo $t >> $loggedSubjectsFile
+                files=$(grep -l -R $t ${LOG_FOLDER})
+                for f in $files ; do
+                    #filename=$(dirname "$(dirname "$f")")
+                    #filename=$(basename -- "$filename")
+                    filename=$(basename -- "$f")
+                    filename="${filename%.*}"
+                    echo $filename >> $loggedSubjectsFile
+                done
             done
         fi
     else
