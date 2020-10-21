@@ -8,12 +8,13 @@ export DBNDIR=$(dirname "$(dirname "$(dirname "$DBNDIR")")")
 
 # Set up FSL (if not already done so in the running environment)
 # Uncomment the following 2 lines (remove the leading #) and correct the FSLDIR setting for your setup
-export FSLDIR="$HOME/local/fsl"
-source "$FSLDIR/etc/fslconf/fsl.sh"
+#export FSLDIR="$HOME/local/fsl"
+#source "$FSLDIR/etc/fslconf/fsl.sh"
 
 # Set up MATLAB (if not already done so in the running environment)
 # Uncomment the following line (remove the leading #) and correct the MATLABDIR setting for your setup
-export MATLABDIR=/usr/local/bin/matlab
+#export MATLABDIR=/usr/local/bin/matlab
+export MATLABDIR=$(which matlab)
 
 # Set up SPM12 (if not already done so in the running environment)
 # Uncomment the following line (remove the leading #) and correct the SPM12DIR setting for your setup
