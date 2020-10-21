@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - src/data/RPP/data.py Manage the data folder
 
-## [3.0.0] - 2020-10-18
+## [3.0.0] - 2020-10-20
 ### Added
+-src/data/MPP/scripts/BiasCorrection.sh
+-src/data/MPP/scripts/BiasCorrection.m
+-src/data/MPP/scripts/BrainExtractionSegmentationBased.sh
+-src/data/MPP/scripts/BrainExtractionSegmentationBased.m
 
 ### Changed
 
 ### Removed
+-src/data/MPP/scripts/ACPCAlignment.sh
+-src/data/MPP/scripts/OneStepResampledACPC.sh
 
 ### Fixed
 
