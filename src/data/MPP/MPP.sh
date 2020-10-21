@@ -234,7 +234,7 @@ input_parser "$@"
 # ------------------------------------------------------------------------------
 opts_ShowValues
 
-# Naming Conventions
+# Naming Conventions for directories
 t1wImage="T1w"
 t1wFolder="T1w" #Location of T1w images
 t2wImage="T2w"
