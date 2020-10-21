@@ -116,7 +116,7 @@ set -eu
 
 echo -e "\nEnvironment Variables"
 
-# ADD COMMENT CLUSTER
+# ADD COMMENT LAPTOP
 log_Check_Env_Var DBNDIR
 log_Check_Env_Var DBN_Libraries
 log_Check_Env_Var MPPDIR
